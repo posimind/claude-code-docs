@@ -4,10 +4,10 @@ This repository contains local copies of Claude Code documentation from https://
 
 The docs are periodically updated via GitHub Actions.
 
-## For /docs Command
+## For /claude-docs Command
 
-When responding to /docs commands:
-1. Follow the instructions in the docs.md command file
+When responding to /claude-docs commands:
+1. Follow the instructions in the claude-docs.md command file
 2. Read documentation files from the docs/ directory only
 3. Use the manifest to know available topics
 

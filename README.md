@@ -13,7 +13,7 @@ Local mirror of Claude Code documentation files from https://code.claude.com/doc
 ## 🆕 Version 0.3.3 - Changelog Integration
 
 **New in this version:**
-- 📋 **Claude Code Changelog**: Access the official Claude Code release notes with `/docs changelog`
+- 📋 **Claude Code Changelog**: Access the official Claude Code release notes with `/claude-docs changelog`
 - 🍎 **Full macOS compatibility**: Fixed shell compatibility issues for Mac users
 - 🐧 **Linux support**: Tested on Ubuntu, Debian, and other distributions
 - 🔧 **Improved installer**: Better handling of updates and edge cases
@@ -55,83 +55,85 @@ curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/inst
 
 This will:
 1. Install to `~/.claude-code-docs` (or migrate existing installation)
-2. Create the `/docs` slash command to pass arguments to the tool and tell it where to find the docs
+2. Create the `/claude-docs` slash command to pass arguments to the tool and tell it where to find the docs (rename it with `CLAUDE_DOCS_COMMAND_NAME` - see [Customize command name](#customize-command-name))
 3. Set up a 'PreToolUse' 'Read' hook to enable automatic git pull when reading docs from the ~/.claude-code-docs`
 
-**Note**: The command is `/docs (user)` - it will show in your command list with "(user)" after it to indicate it's a user-created command.
+**Note**: The command is `/claude-docs (user)` - it will show in your command list with "(user)" after it to indicate it's a user-created command.
 
 ## Usage
 
-The `/docs` command provides instant access to documentation with optional freshness checking.
+The `/claude-docs` command provides instant access to documentation with optional freshness checking.
 
 ### Default: Lightning-fast access (no checks)
 ```bash
-/docs hooks        # Instantly read hooks documentation
-/docs mcp          # Instantly read MCP documentation
-/docs memory       # Instantly read memory documentation
+/claude-docs hooks        # Instantly read hooks documentation
+/claude-docs mcp          # Instantly read MCP documentation
+/claude-docs memory       # Instantly read memory documentation
 ```
 
-You'll see: `📚 Reading from local docs (run /docs -t to check freshness)`
+You'll see: `📚 Reading from local docs (run /claude-docs -t to check freshness)`
 
 ### Check documentation sync status with -t flag
 ```bash
-/docs -t           # Show sync status with GitHub
-/docs -t hooks     # Check sync status, then read hooks docs
-/docs -t mcp       # Check sync status, then read MCP docs
+/claude-docs -t           # Show sync status with GitHub
+/claude-docs -t hooks     # Check sync status, then read hooks docs
+/claude-docs -t mcp       # Check sync status, then read MCP docs
 ```
 
 ### See what's new
 ```bash
-/docs what's new   # Show recent documentation changes with diffs
+/claude-docs what's new   # Show recent documentation changes with diffs
 ```
 
 ### Read Claude Code changelog
 ```bash
-/docs changelog    # Read official Claude Code release notes and version history
+/claude-docs changelog    # Read official Claude Code release notes and version history
 ```
 
 The changelog feature fetches the latest release notes directly from the official Claude Code repository, showing you what's new in each version.
 
 ### Uninstall
 ```bash
-/docs uninstall    # Get commnd to remove claude-code-docs completely
+/claude-docs uninstall    # Get commnd to remove claude-code-docs completely
 ```
 
 ### Customize command name
 
-If you prefer a different command name (e.g., `/claude-docs` instead of `/docs`), you can easily customize it:
+The default command is `/claude-docs`. To use a different name, set `CLAUDE_DOCS_COMMAND_NAME` when running the installer:
 
 ```bash
-# Rename the command file
-mv ~/.claude/commands/docs.md ~/.claude/commands/claude-docs.md
+curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh -o /tmp/install.sh
+CLAUDE_DOCS_COMMAND_NAME=cdocs bash /tmp/install.sh
 
-# Now use /claude-docs instead of /docs
-/claude-docs hooks
-/claude-docs mcp
+# Now use /cdocs
+/cdocs hooks
+/cdocs mcp
 ```
 
-You can use any name you prefer: `/cdocs`, `/claude-code-docs`, etc. The command file name determines the slash command.
+You can use any name made of letters, digits, hyphens and underscores: `cdocs`, `claude-code-docs`, etc. The name is used for the command file (`~/.claude/commands/<name>.md`) and inside the help text the helper script prints.
+
+The installer records the chosen name in `~/.claude-code-docs/.command_name`, so the uninstaller removes the right command file without you having to set the variable again.
 
 ### Creative usage examples
 ```bash
 # Natural language queries work great
-/docs what environment variables exist and how do I use them?
-/docs explain the differences between hooks and MCP
+/claude-docs what environment variables exist and how do I use them?
+/claude-docs explain the differences between hooks and MCP
 
 # Check for recent changes
-/docs -t what's new in the latest documentation?
-/docs changelog    # Check Claude Code release notes
+/claude-docs -t what's new in the latest documentation?
+/claude-docs changelog    # Check Claude Code release notes
 
 # Search across all docs
-/docs find all mentions of authentication
-/docs how do I customize Claude Code's behavior?
+/claude-docs find all mentions of authentication
+/claude-docs how do I customize Claude Code's behavior?
 ```
 
 ## How Updates Work
 
 The documentation attempts to stay current:
 - GitHub Actions runs periodically to fetch new documentation
-- When you use `/docs`, it checks for updates
+- When you use `/claude-docs`, it checks for updates
 - Updates are pulled when available
 - You may see "🔄 Updating documentation..." when this happens
 
@@ -150,14 +152,14 @@ The installer will handle migration and updates automatically.
 ## Troubleshooting
 
 ### Command not found
-If `/docs` returns "command not found":
-1. Check if the command file exists: `ls ~/.claude/commands/docs.md`
+If `/claude-docs` returns "command not found":
+1. Check if the command file exists: `ls ~/.claude/commands/claude-docs.md`
 2. Restart Claude Code to reload commands
 3. Re-run the installation script
 
 ### Documentation not updating
 If documentation seems outdated:
-1. Run `/docs -t` to check sync status and force an update
+1. Run `/claude-docs -t` to check sync status and force an update
 2. Manually update: `cd ~/.claude-code-docs && git pull`
 3. Check if GitHub Actions are running: [View Actions](https://github.com/posimind/claude-code-docs/actions)
 
@@ -171,7 +173,7 @@ If documentation seems outdated:
 To completely remove the docs integration:
 
 ```bash
-/docs uninstall
+/claude-docs uninstall
 ```
 
 Or run:
@@ -195,7 +197,7 @@ See [UNINSTALL.md](UNINSTALL.md) for manual uninstall instructions.
 ## What's New
 
 ### v0.3.3 (Latest)
-- Added Claude Code changelog integration (`/docs changelog`)
+- Added Claude Code changelog integration (`/claude-docs changelog`)
 - Fixed shell compatibility for macOS users (zsh/bash)
 - Improved documentation and error messages
 - Added platform compatibility badges

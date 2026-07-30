@@ -11,7 +11,7 @@ From anywhere, run:
 
 Or use the docs command:
 ```bash
-/docs uninstall
+/claude-docs uninstall
 ```
 
 ### For v0.2 or older (custom installation locations)
@@ -25,7 +25,7 @@ Navigate to your installation directory and run:
 
 The uninstaller will remove:
 
-1. **The /docs command** from `~/.claude/commands/docs.md`
+1. **The /claude-docs command** from `~/.claude/commands/claude-docs.md` (or whatever name you installed it under - the uninstaller reads it from `~/.claude-code-docs/.command_name`)
 2. **The auto-update hook** from `~/.claude/settings.json`
 3. **The installation directory**:
    - v0.3+: `~/.claude-code-docs`
@@ -37,6 +37,9 @@ If you prefer to uninstall manually:
 
 ### 1. Remove the command file:
 ```bash
+rm -f ~/.claude/commands/claude-docs.md
+
+# Older installs used /docs - remove that too if it is still around
 rm -f ~/.claude/commands/docs.md
 ```
 

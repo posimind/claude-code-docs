@@ -13,6 +13,20 @@ INSTALL_DIR="$HOME/.claude-code-docs"
 # Branch to use for installation
 INSTALL_BRANCH="main"
 
+# Slash command name - override with: CLAUDE_DOCS_COMMAND_NAME=mydocs ./install.sh
+COMMAND_NAME="${CLAUDE_DOCS_COMMAND_NAME:-claude-docs}"
+
+if [[ ! "$COMMAND_NAME" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    echo "❌ Error: invalid command name: $COMMAND_NAME"
+    echo "Only letters, digits, hyphens and underscores are allowed"
+    exit 1
+fi
+
+COMMAND_FILE="$HOME/.claude/commands/${COMMAND_NAME}.md"
+
+# Command file used by installs before the command was renamed
+LEGACY_COMMAND_FILE="$HOME/.claude/commands/docs.md"
+
 # Detect OS type
 if [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
@@ -42,8 +56,10 @@ echo "✓ All dependencies satisfied"
 find_existing_installations() {
     local paths=()
     
-    # Check command file for paths
-    if [[ -f ~/.claude/commands/docs.md ]]; then
+    # Check command files (current name and the legacy /docs one) for paths
+    local cmd_file
+    for cmd_file in "$COMMAND_FILE" "$LEGACY_COMMAND_FILE"; do
+        [[ -f "$cmd_file" ]] || continue
         # Look for paths in the command file
         # v0.1 format: LOCAL DOCS AT: /path/to/claude-code-docs/docs/
         # v0.2+ format: Execute: /path/to/claude-code-docs/helper.sh
@@ -67,9 +83,9 @@ find_existing_installations() {
                     paths+=("$(dirname "$path")")
                 fi
             fi
-        done < ~/.claude/commands/docs.md
-    fi
-    
+        done < "$cmd_file"
+    done
+
     # Check settings.json hooks for paths
     if [[ -f ~/.claude/settings.json ]]; then
         local hooks=$(jq -r '.hooks.PreToolUse[]?.hooks[]?.command // empty' ~/.claude/settings.json 2>/dev/null)
@@ -383,16 +399,25 @@ fi
 echo ""
 echo "Setting up Claude Code Docs v0.3.3..."
 
+# Replace {{COMMAND_NAME}} placeholders with the configured command name
+# (portable across GNU and BSD sed - no in-place flag)
+render_command_name() {
+    local file="$1"
+    sed "s/{{COMMAND_NAME}}/$COMMAND_NAME/g" "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
 # Copy helper script from template
 echo "Installing helper script..."
 if [[ -f "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" ]]; then
     cp "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" "$INSTALL_DIR/claude-docs-helper.sh"
+    render_command_name "$INSTALL_DIR/claude-docs-helper.sh"
     chmod +x "$INSTALL_DIR/claude-docs-helper.sh"
     echo "✓ Helper script installed"
 else
     echo "  ⚠️  Template file missing, attempting recovery..."
     # Try to fetch just the template file
     if curl -fsSL "https://raw.githubusercontent.com/posimind/claude-code-docs/$INSTALL_BRANCH/scripts/claude-docs-helper.sh.template" -o "$INSTALL_DIR/claude-docs-helper.sh" 2>/dev/null; then
+        render_command_name "$INSTALL_DIR/claude-docs-helper.sh"
         chmod +x "$INSTALL_DIR/claude-docs-helper.sh"
         echo "  ✓ Helper script downloaded directly"
     else
@@ -403,24 +428,24 @@ else
 fi
 
 # Always update command (in case it points to old location)
-echo "Setting up /docs command..."
+echo "Setting up /$COMMAND_NAME command..."
 mkdir -p ~/.claude/commands
 
 # Remove old command if it exists
-if [[ -f ~/.claude/commands/docs.md ]]; then
+if [[ -f "$COMMAND_FILE" ]]; then
     echo "  Updating existing command..."
 fi
 
 # Create simplified docs command
-cat > ~/.claude/commands/docs.md << 'EOF'
+cat > "$COMMAND_FILE" << EOF
 Execute the Claude Code Docs helper script at ~/.claude-code-docs/claude-docs-helper.sh
 
 Usage:
-- /docs - List all available documentation topics
-- /docs <topic> - Read specific documentation with link to official docs
-- /docs -t - Check sync status without reading a doc
-- /docs -t <topic> - Check freshness then read documentation
-- /docs whats new - Show recent documentation changes (or "what's new")
+- /$COMMAND_NAME - List all available documentation topics
+- /$COMMAND_NAME <topic> - Read specific documentation with link to official docs
+- /$COMMAND_NAME -t - Check sync status without reading a doc
+- /$COMMAND_NAME -t <topic> - Check freshness then read documentation
+- /$COMMAND_NAME whats new - Show recent documentation changes (or "what's new")
 
 Examples of expected output:
 
@@ -448,10 +473,21 @@ When showing what's new:
 Every request checks for the latest documentation from GitHub (takes ~0.4s).
 The helper script handles all functionality including auto-updates.
 
-Execute: ~/.claude-code-docs/claude-docs-helper.sh "$ARGUMENTS"
+Execute: ~/.claude-code-docs/claude-docs-helper.sh "\$ARGUMENTS"
 EOF
 
-echo "✓ Created /docs command"
+echo "✓ Created /$COMMAND_NAME command"
+
+# Record the command name so the uninstaller removes the right file
+echo "$COMMAND_NAME" > "$INSTALL_DIR/.command_name"
+
+# Warn about a leftover /docs command from an older install
+if [[ "$COMMAND_NAME" != "docs" && -f "$LEGACY_COMMAND_FILE" ]] && grep -q "claude-code-docs" "$LEGACY_COMMAND_FILE" 2>/dev/null; then
+    echo ""
+    echo "ℹ️  An older /docs command still exists at: $LEGACY_COMMAND_FILE"
+    echo "   It was left untouched. Remove it if you no longer want /docs:"
+    echo "   rm -f $LEGACY_COMMAND_FILE"
+fi
 
 # Always update hook (remove old ones pointing to wrong location)
 echo "Setting up automatic updates..."
@@ -501,13 +537,13 @@ cleanup_old_installations
 echo ""
 echo "✅ Claude Code Docs v0.3.3 installed successfully!"
 echo ""
-echo "📚 Command: /docs (user)"
+echo "📚 Command: /$COMMAND_NAME (user)"
 echo "📂 Location: ~/.claude-code-docs"
 echo ""
 echo "Usage examples:"
-echo "  /docs hooks         # Read hooks documentation"
-echo "  /docs -t           # Check when docs were last updated"
-echo "  /docs what's new  # See recent documentation changes"
+echo "  /$COMMAND_NAME hooks         # Read hooks documentation"
+echo "  /$COMMAND_NAME -t           # Check when docs were last updated"
+echo "  /$COMMAND_NAME what's new  # See recent documentation changes"
 echo ""
 echo "🔄 Auto-updates: Enabled - syncs automatically when GitHub has newer content"
 echo ""

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Claude Code Documentation Helper Script v0.3.3
-# This script handles all /docs command functionality  
+# This script handles all /{{COMMAND_NAME}} command functionality
+# {{COMMAND_NAME}} is substituted by install.sh from $CLAUDE_DOCS_COMMAND_NAME
 # Installation path: ~/.claude-code-docs/claude-docs-helper.sh
 
 # Script version
@@ -203,7 +204,7 @@ read_doc() {
                 echo "Found these related topics:"
                 echo "$matches" | sed 's/^/  • /' 
                 echo ""
-                echo "Try: /docs <topic> to read a specific document"
+                echo "Try: /{{COMMAND_NAME}} <topic> to read a specific document"
             else
                 echo "No exact matches found. Here are all available topics:"
                 ls "$DOCS_PATH/docs" | grep '\.md$' | sed 's/\.md$//' | sort | column -c 80
@@ -228,7 +229,7 @@ list_docs() {
     echo ""
     ls "$DOCS_PATH/docs" | grep '\.md$' | sed 's/\.md$//' | sort | column -c 80
     echo ""
-    echo "Usage: /docs <topic> or /docs -t to check freshness"
+    echo "Usage: /{{COMMAND_NAME}} <topic> or /{{COMMAND_NAME}} -t to check freshness"
 }
 
 # Function for hook check (auto-update)
@@ -302,7 +303,7 @@ uninstall() {
     echo ""
     
     echo "This will remove:"
-    echo "  • The /docs command from ~/.claude/commands/docs.md"
+    echo "  • The /{{COMMAND_NAME}} command from ~/.claude/commands/{{COMMAND_NAME}}.md"
     echo "  • The auto-update hook from ~/.claude/settings.json"
     echo "  • The installation directory ~/.claude-code-docs"
     echo ""

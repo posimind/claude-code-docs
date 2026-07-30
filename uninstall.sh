@@ -8,17 +8,40 @@ echo "Claude Code Documentation Mirror - Uninstaller"
 echo "=============================================="
 echo ""
 
+INSTALL_DIR="$HOME/.claude-code-docs"
+
+# Slash command name: env override > name recorded at install time > default
+if [[ -n "${CLAUDE_DOCS_COMMAND_NAME:-}" ]]; then
+    COMMAND_NAME="$CLAUDE_DOCS_COMMAND_NAME"
+elif [[ -f "$INSTALL_DIR/.command_name" ]]; then
+    COMMAND_NAME="$(tr -d '[:space:]' < "$INSTALL_DIR/.command_name")"
+else
+    COMMAND_NAME="claude-docs"
+fi
+
+# Fall back to the default if the recorded name is unusable as a filename
+if [[ ! "$COMMAND_NAME" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    COMMAND_NAME="claude-docs"
+fi
+
+COMMAND_FILE="$HOME/.claude/commands/${COMMAND_NAME}.md"
+
+# Command file used by installs before the command was renamed
+LEGACY_COMMAND_FILE="$HOME/.claude/commands/docs.md"
+
 # Find all installations from configs
 find_all_installations() {
     local paths=()
-    
-    # From command file
-    if [[ -f ~/.claude/commands/docs.md ]]; then
+
+    # From command files (current name and the legacy /docs one)
+    local cmd_file
+    for cmd_file in "$COMMAND_FILE" "$LEGACY_COMMAND_FILE"; do
+        [[ -f "$cmd_file" ]] || continue
         while IFS= read -r line; do
             if [[ "$line" =~ Execute:.*claude-code-docs ]]; then
                 local path=$(echo "$line" | grep -o '[^ "]*claude-code-docs[^ "]*' | head -1)
                 path="${path/#\~/$HOME}"
-                
+
                 # Get directory part
                 if [[ -d "$path" ]]; then
                     paths+=("$path")
@@ -26,9 +49,9 @@ find_all_installations() {
                     paths+=("$(dirname "$path")")
                 fi
             fi
-        done < ~/.claude/commands/docs.md
-    fi
-    
+        done < "$cmd_file"
+    done
+
     # From hooks
     if [[ -f ~/.claude/settings.json ]]; then
         local hooks=$(jq -r '.hooks.PreToolUse[]?.hooks[]?.command // empty' ~/.claude/settings.json 2>/dev/null)
@@ -69,7 +92,7 @@ if [[ ${#installations[@]} -gt 0 ]]; then
 fi
 
 echo "This will remove:"
-echo "  • The /docs command from ~/.claude/commands/docs.md"
+echo "  • The /$COMMAND_NAME command from $COMMAND_FILE"
 echo "  • All claude-code-docs hooks from ~/.claude/settings.json"
 if [[ ${#installations[@]} -gt 0 ]]; then
     echo "  • Installation directories (if safe to remove)"
@@ -84,9 +107,15 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Remove command file
-if [[ -f ~/.claude/commands/docs.md ]]; then
-    rm -f ~/.claude/commands/docs.md
-    echo "✓ Removed /docs command"
+if [[ -f "$COMMAND_FILE" ]]; then
+    rm -f "$COMMAND_FILE"
+    echo "✓ Removed /$COMMAND_NAME command"
+fi
+
+# Point out a leftover /docs command from an older install (left untouched)
+if [[ "$COMMAND_NAME" != "docs" && -f "$LEGACY_COMMAND_FILE" ]] && grep -q "claude-code-docs" "$LEGACY_COMMAND_FILE" 2>/dev/null; then
+    echo "ℹ️  An older /docs command still exists at: $LEGACY_COMMAND_FILE"
+    echo "   Remove it with: rm -f $LEGACY_COMMAND_FILE"
 fi
 
 # Remove hooks
@@ -113,8 +142,8 @@ if [[ ${#installations[@]} -gt 0 ]]; then
         fi
         
         if [[ -d "$path/.git" ]]; then
-            # Save current directory
-            local current_dir=$(pwd)
+            # Save current directory ('local' is only valid inside a function)
+            current_dir=$(pwd)
             cd "$path"
             
             if [[ -z "$(git status --porcelain 2>/dev/null)" ]]; then
