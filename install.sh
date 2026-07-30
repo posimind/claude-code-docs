@@ -503,42 +503,48 @@ if [[ "$COMMAND_NAME" != "docs" && -f "$LEGACY_COMMAND_FILE" ]] && grep -q "clau
     echo "   rm -f $LEGACY_COMMAND_FILE"
 fi
 
-# Always update hook (remove old ones pointing to wrong location)
-echo "Setting up automatic updates..."
+# Always update hooks (remove old ones pointing to wrong location)
+echo "Setting up hooks..."
 
-# Simple hook that just calls the helper script
+# Keeps the mirror fresh when Claude reads from it
 HOOK_COMMAND="~/.claude-code-docs/claude-docs-helper.sh hook-check"
+# Redirects fetches of code.claude.com to the local mirror
+WEBFETCH_HOOK_COMMAND="~/.claude-code-docs/claude-docs-helper.sh webfetch-guard"
+# Tells doc-answering subagents about the mirror before they reach for WebFetch
+SUBAGENT_HOOK_COMMAND="~/.claude-code-docs/claude-docs-helper.sh subagent-context"
+SUBAGENT_MATCHER="claude-code-guide"
+
+# One program for both branches: with null input (-n) the assignments build the
+# object from scratch, so a missing settings.json needs no separate template.
+# strip_ours drops hooks from any previous install, at any path.
+HOOK_JQ_PROGRAM='
+def strip_ours(list): [ (list // [])[]
+    | select((((.hooks // [])[0].command) // "") | contains("claude-code-docs") | not) ];
+
+.hooks.PreToolUse = strip_ours(.hooks.PreToolUse) + [
+    { matcher: "Read",     hooks: [{ type: "command", command: $read_cmd }] },
+    { matcher: "WebFetch", hooks: [{ type: "command", command: $web_cmd }] }
+]
+| .hooks.SubagentStart = strip_ours(.hooks.SubagentStart) + [
+    { matcher: $agent_matcher, hooks: [{ type: "command", command: $sub_cmd }] }
+]'
 
 if [ -f ~/.claude/settings.json ]; then
-    # Update existing settings.json
     echo "  Updating Claude settings..."
-    
-    # First remove ALL hooks that contain "claude-code-docs" anywhere in the command
-    # This catches old installations at any path
-    jq '.hooks.PreToolUse = [(.hooks.PreToolUse // [])[] | select(.hooks[0].command | contains("claude-code-docs") | not)]' ~/.claude/settings.json > ~/.claude/settings.json.tmp
-    
-    # Then add our new hook
-    jq --arg cmd "$HOOK_COMMAND" '.hooks.PreToolUse = [(.hooks.PreToolUse // [])[]] + [{"matcher": "Read", "hooks": [{"type": "command", "command": $cmd}]}]' ~/.claude/settings.json.tmp > ~/.claude/settings.json
-    rm -f ~/.claude/settings.json.tmp
+    jq --arg read_cmd "$HOOK_COMMAND" \
+       --arg web_cmd "$WEBFETCH_HOOK_COMMAND" \
+       --arg sub_cmd "$SUBAGENT_HOOK_COMMAND" \
+       --arg agent_matcher "$SUBAGENT_MATCHER" \
+       "$HOOK_JQ_PROGRAM" ~/.claude/settings.json > ~/.claude/settings.json.tmp
+    mv ~/.claude/settings.json.tmp ~/.claude/settings.json
     echo "✓ Updated Claude settings"
 else
-    # Create new settings.json
     echo "  Creating Claude settings..."
-    jq -n --arg cmd "$HOOK_COMMAND" '{
-        "hooks": {
-            "PreToolUse": [
-                {
-                    "matcher": "Read",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": $cmd
-                        }
-                    ]
-                }
-            ]
-        }
-    }' > ~/.claude/settings.json
+    jq -n --arg read_cmd "$HOOK_COMMAND" \
+          --arg web_cmd "$WEBFETCH_HOOK_COMMAND" \
+          --arg sub_cmd "$SUBAGENT_HOOK_COMMAND" \
+          --arg agent_matcher "$SUBAGENT_MATCHER" \
+          "$HOOK_JQ_PROGRAM" > ~/.claude/settings.json
     echo "✓ Created Claude settings"
 fi
 
@@ -560,6 +566,8 @@ echo "  /$COMMAND_NAME -t           # Check when docs were last updated"
 echo "  /$COMMAND_NAME what's new  # See recent documentation changes"
 echo ""
 echo "🔄 Auto-updates: Enabled - syncs automatically when GitHub has newer content"
+echo "🌐 Offline mode: Fetches of code.claude.com are redirected to the local mirror,"
+echo "   and doc-answering subagents are told where the mirror lives"
 echo ""
 echo "Available topics:"
 ls "$INSTALL_DIR/docs" | grep '\.md$' | sed 's/\.md$//' | sort | column -c 60

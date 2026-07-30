@@ -317,6 +317,97 @@ uninstall() {
     echo ""
 }
 
+# Map an official docs URL to a file in the local mirror.
+# https://code.claude.com/docs/en/agent-sdk/python -> agent-sdk__python.md
+# Prints the filename, or nothing when the page is not mirrored.
+url_to_local_file() {
+    local url="$1"
+    local slug candidate
+
+    # Drop query string, fragment, a trailing .md and any trailing slash
+    url="${url%%\?*}"
+    url="${url%%#*}"
+    url="${url%.md}"
+    url="${url%/}"
+
+    # Exact match against the manifest is authoritative
+    if [[ -f "$MANIFEST" ]]; then
+        candidate=$(jq -r --arg u "$url" \
+            'first(.files | to_entries[] | select(.value.original_url == $u) | .key) // empty' \
+            "$MANIFEST" 2>/dev/null || true)
+        if [[ -n "$candidate" && -f "$DOCS_PATH/docs/$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    fi
+
+    # Fall back to the naming convention for pages added since the last sync
+    slug="${url#*://}"
+    slug="${slug#*/docs/en/}"
+    if [[ "$slug" != "$url" && -n "$slug" ]]; then
+        candidate="${slug//\//__}.md"
+        if [[ -f "$DOCS_PATH/docs/$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    fi
+
+    return 0
+}
+
+# PreToolUse hook for WebFetch: send official docs URLs to the local mirror.
+# Reads the hook payload on stdin and always exits 0 - the decision travels
+# in the JSON body, not the exit code.
+webfetch_guard() {
+    local input url local_file reason
+
+    input=$(cat)
+    url=$(printf '%s' "$input" | jq -r '.tool_input.url // empty' 2>/dev/null || true)
+
+    # Anything that is not the official docs site is none of our business
+    case "$url" in
+        http://code.claude.com/*|https://code.claude.com/*) ;;
+        *) exit 0 ;;
+    esac
+
+    local_file=$(url_to_local_file "$url")
+
+    if [[ -n "$local_file" ]]; then
+        reason="This page is mirrored locally and code.claude.com is not reachable from this network. Read $DOCS_PATH/docs/$local_file instead."
+    else
+        reason="code.claude.com is not reachable from this network, and no mirrored page matches $url. Search the local mirror instead: ls $DOCS_PATH/docs/ for the topic list, or grep -ril '<keyword>' $DOCS_PATH/docs/. Page-to-file mapping lives in $MANIFEST."
+    fi
+
+    jq -n --arg reason "$reason" '{
+        hookSpecificOutput: {
+            hookEventName: "PreToolUse",
+            permissionDecision: "deny",
+            permissionDecisionReason: $reason
+        }
+    }'
+    exit 0
+}
+
+# SubagentStart hook: tell the subagent the mirror exists before it reaches
+# for WebFetch. Reads and discards the hook payload, always exits 0.
+subagent_context() {
+    local topic_count context
+
+    cat >/dev/null 2>&1 || true
+
+    topic_count=$(ls "$DOCS_PATH/docs" 2>/dev/null | grep -c '\.md$' || echo "0")
+
+    context="The Claude Code documentation is mirrored locally at $DOCS_PATH/docs/ ($topic_count pages, synced from https://code.claude.com/docs/en/). code.claude.com is NOT reachable from this network, so answer from the mirror: Read $DOCS_PATH/docs/<topic>.md, or grep -ril '<keyword>' $DOCS_PATH/docs/ to find the right page. Nested pages flatten their path with a double underscore, so /docs/en/agent-sdk/python is agent-sdk__python.md. $MANIFEST maps every file to its original URL. Cite the official URL in your answer, but do not fetch it."
+
+    jq -n --arg ctx "$context" '{
+        hookSpecificOutput: {
+            hookEventName: "SubagentStart",
+            additionalContext: $ctx
+        }
+    }'
+    exit 0
+}
+
 # Store original arguments for flag checking
 FULL_ARGS="$*"
 
@@ -362,6 +453,12 @@ case "${1:-}" in
         ;;
     hook-check)
         hook_check
+        ;;
+    webfetch-guard)
+        webfetch_guard
+        ;;
+    subagent-context)
+        subagent_context
         ;;
     uninstall)
         uninstall

@@ -57,6 +57,7 @@ This will:
 1. Install to `~/.claude-code-docs` (or migrate existing installation)
 2. Create the `/claude-docs` slash command to pass arguments to the tool and tell it where to find the docs (rename it with `CLAUDE_DOCS_COMMAND_NAME` - see [Customize command name](#customize-command-name))
 3. Set up a 'PreToolUse' 'Read' hook to enable automatic git pull when reading docs from the ~/.claude-code-docs`
+4. Set up hooks that keep Claude on the local mirror when `code.claude.com` is unreachable (see [Offline and Restricted Networks](#offline-and-restricted-networks))
 
 **Note**: The command is `/claude-docs (user)` - it will show in your command list with "(user)" after it to indicate it's a user-created command.
 
@@ -139,6 +140,30 @@ The documentation attempts to stay current:
 
 Note: If automatic updates fail, you can always run the installer again to get the latest version.
 
+## Offline and Restricted Networks
+
+On a network that cannot reach `code.claude.com`, Claude would normally try to fetch the official docs and fail. Two hooks send it to the mirror instead:
+
+**Fetches are redirected.** A `PreToolUse` hook on `WebFetch` intercepts any `code.claude.com` URL, resolves it against `docs_manifest.json`, and denies the fetch with the matching local path in the reason:
+
+```
+WebFetch https://code.claude.com/docs/en/agent-sdk/python
+  -> denied: "Read ~/.claude-code-docs/docs/agent-sdk__python.md instead."
+```
+
+Nested pages flatten their path with a double underscore, and anchors, query strings and a trailing `.md` are all handled. URLs on other hosts pass through untouched. If a page is not mirrored, the hook still denies the fetch but points at `ls` and `grep` over the mirror.
+
+**Subagents are told up front.** A `SubagentStart` hook fires for the built-in `claude-code-guide` agent - the one Claude delegates Claude Code questions to - and injects the mirror's location, page count and naming convention into its context, so it reads local files instead of reaching for `WebFetch` at all.
+
+To cover another agent, add its name to the `SubagentStart` matcher in `~/.claude/settings.json`; the matcher is a regex, so `claude-code-guide|my-docs-agent` works. Both hooks are also useful with the network up, since a local read beats a fetch.
+
+You can exercise either hook by hand:
+
+```bash
+echo '{"tool_input":{"url":"https://code.claude.com/docs/en/hooks"}}' \
+  | ~/.claude-code-docs/claude-docs-helper.sh webfetch-guard
+```
+
 ## Updating from Previous Versions
 
 Regardless of which version you have installed, simply run:
@@ -185,8 +210,11 @@ See [UNINSTALL.md](UNINSTALL.md) for manual uninstall instructions.
 
 ## Security Notes
 
-- The installer modifies `~/.claude/settings.json` to add an auto-update hook
-- The hook only runs `git pull` when reading documentation files
+- The installer modifies `~/.claude/settings.json` to add three hooks, all of which run the same helper script in `~/.claude-code-docs`:
+  - `PreToolUse` on `Read` - runs `git pull` when reading documentation files
+  - `PreToolUse` on `WebFetch` - denies `code.claude.com` fetches and names the local file instead; other hosts are ignored
+  - `SubagentStart` on `claude-code-guide` - injects the mirror's location into that subagent's context
+- Hooks from previous installs are removed on install and on uninstall, matched by `claude-code-docs` appearing in the command; hooks you added yourself are left alone
 - All operations are limited to the documentation directory
 - No data is sent externally - everything is local
 - **Repository Trust**: The installer clones from GitHub over HTTPS. For additional security, you can:

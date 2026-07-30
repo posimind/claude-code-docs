@@ -127,14 +127,19 @@ fi
 if [[ -f ~/.claude/settings.json ]]; then
     cp ~/.claude/settings.json ~/.claude/settings.json.backup
     
-    # Remove ALL hooks containing claude-code-docs
-    jq '.hooks.PreToolUse = [(.hooks.PreToolUse // [])[] | select(.hooks[0].command | contains("claude-code-docs") | not)]' ~/.claude/settings.json > ~/.claude/settings.json.tmp
-    
-    # Clean up empty structures
-    jq 'if .hooks.PreToolUse == [] then .hooks |= if . == {PreToolUse: []} then {} else del(.PreToolUse) end else . end | if .hooks == {} then del(.hooks) else . end' ~/.claude/settings.json.tmp > ~/.claude/settings.json.tmp2
-    
-    mv ~/.claude/settings.json.tmp2 ~/.claude/settings.json
-    rm -f ~/.claude/settings.json.tmp
+    # Remove ALL hooks containing claude-code-docs, then drop the empty
+    # containers they leave behind
+    jq '
+    def strip_ours(list): [ (list // [])[]
+        | select((((.hooks // [])[0].command) // "") | contains("claude-code-docs") | not) ];
+
+    .hooks.PreToolUse = strip_ours(.hooks.PreToolUse)
+    | .hooks.SubagentStart = strip_ours(.hooks.SubagentStart)
+    | .hooks |= with_entries(select(.value != []))
+    | if .hooks == {} then del(.hooks) else . end
+    ' ~/.claude/settings.json > ~/.claude/settings.json.tmp
+
+    mv ~/.claude/settings.json.tmp ~/.claude/settings.json
     echo "✓ Removed hooks (backup: ~/.claude/settings.json.backup)"
 fi
 
