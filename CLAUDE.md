@@ -1,6 +1,6 @@
 # Claude Code Documentation Mirror
 
-This repository contains local copies of Claude Code documentation from https://docs.anthropic.com/en/docs/claude-code/
+This repository contains local copies of Claude Code documentation from https://code.claude.com/docs/en/
 
 The docs are periodically updated via GitHub Actions.
 

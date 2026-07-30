@@ -56,7 +56,7 @@ jobs:
         ### Installation
 
         \`\`\`bash
-        curl -fsSL https://raw.githubusercontent.com/ericbuess/claude-code-docs/main/install.sh | bash
+        curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh | bash
         \`\`\`
 
         ### What's Changed (Auto-generated)

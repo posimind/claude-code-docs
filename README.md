@@ -1,14 +1,14 @@
 # Claude Code Documentation Mirror
 
-[![Last Update](https://img.shields.io/github/last-commit/ericbuess/claude-code-docs/main.svg?label=docs%20updated)](https://github.com/ericbuess/claude-code-docs/commits/main)
+[![Last Update](https://img.shields.io/github/last-commit/posimind/claude-code-docs/main.svg?label=docs%20updated)](https://github.com/posimind/claude-code-docs/commits/main)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue)]()
-[![Beta](https://img.shields.io/badge/status-early%20beta-orange)](https://github.com/ericbuess/claude-code-docs/issues)
+[![Beta](https://img.shields.io/badge/status-early%20beta-orange)](https://github.com/posimind/claude-code-docs/issues)
 
-Local mirror of Claude Code documentation files from https://docs.anthropic.com/en/docs/claude-code/, updated every 3 hours.
+Local mirror of Claude Code documentation files from https://code.claude.com/docs/en/, updated every 3 hours.
 
 ## ⚠️ Early Beta Notice
 
-**This is an early beta release**. There may be errors or unexpected behavior. If you encounter any issues, please [open an issue](https://github.com/ericbuess/claude-code-docs/issues) - your feedback helps improve the tool!
+**This is an early beta release**. There may be errors or unexpected behavior. If you encounter any issues, please [open an issue](https://github.com/posimind/claude-code-docs/issues) - your feedback helps improve the tool!
 
 ## 🆕 Version 0.3.3 - Changelog Integration
 
@@ -20,7 +20,7 @@ Local mirror of Claude Code documentation files from https://docs.anthropic.com/
 
 To update:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ericbuess/claude-code-docs/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh | bash
 ```
 
 ## Why This Exists
@@ -50,7 +50,7 @@ This tool requires the following to be installed:
 Run this single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ericbuess/claude-code-docs/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh | bash
 ```
 
 This will:
@@ -142,7 +142,7 @@ Note: If automatic updates fail, you can always run the installer again to get t
 Regardless of which version you have installed, simply run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ericbuess/claude-code-docs/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh | bash
 ```
 
 The installer will handle migration and updates automatically.
@@ -159,7 +159,7 @@ If `/docs` returns "command not found":
 If documentation seems outdated:
 1. Run `/docs -t` to check sync status and force an update
 2. Manually update: `cd ~/.claude-code-docs && git pull`
-3. Check if GitHub Actions are running: [View Actions](https://github.com/ericbuess/claude-code-docs/actions)
+3. Check if GitHub Actions are running: [View Actions](https://github.com/posimind/claude-code-docs/actions)
 
 ### Installation errors
 - **"git/jq/curl not found"**: Install the missing tool first
@@ -209,9 +209,9 @@ See [UNINSTALL.md](UNINSTALL.md) for manual uninstall instructions.
 
 **Contributions are welcome!** This is a community project and we'd love your help:
 
-- 🪟 **Windows Support**: Want to help add Windows compatibility? [Fork the repository](https://github.com/ericbuess/claude-code-docs/fork) and submit a PR!
-- 🐛 **Bug Reports**: Found something not working? [Open an issue](https://github.com/ericbuess/claude-code-docs/issues)
-- 💡 **Feature Requests**: Have an idea? [Start a discussion](https://github.com/ericbuess/claude-code-docs/issues)
+- 🪟 **Windows Support**: Want to help add Windows compatibility? [Fork the repository](https://github.com/posimind/claude-code-docs/fork) and submit a PR!
+- 🐛 **Bug Reports**: Found something not working? [Open an issue](https://github.com/posimind/claude-code-docs/issues)
+- 💡 **Feature Requests**: Have an idea? [Start a discussion](https://github.com/posimind/claude-code-docs/issues)
 - 📝 **Documentation**: Help improve docs or add examples
 
 You can also use Claude Code itself to help build features - just fork the repo and let Claude assist you!
@@ -222,7 +222,7 @@ As this is an early beta, you might encounter some issues:
 - Auto-updates may occasionally fail on some network configurations
 - Some documentation links might not resolve correctly
 
-If you find any issues not listed here, please [report them](https://github.com/ericbuess/claude-code-docs/issues)!
+If you find any issues not listed here, please [report them](https://github.com/posimind/claude-code-docs/issues)!
 
 ## License
 

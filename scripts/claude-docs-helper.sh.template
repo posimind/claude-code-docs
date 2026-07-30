@@ -23,8 +23,8 @@ sanitize_input() {
 
 # Function to print documentation header
 print_doc_header() {
-    echo "📚 COMMUNITY MIRROR: https://github.com/ericbuess/claude-code-docs"
-    echo "📖 OFFICIAL DOCS: https://docs.anthropic.com/en/docs/claude-code"
+    echo "📚 COMMUNITY MIRROR: https://github.com/posimind/claude-code-docs"
+    echo "📖 OFFICIAL DOCS: https://code.claude.com/docs/en"
     echo ""
 }
 
@@ -79,7 +79,7 @@ show_freshness() {
     if [[ ! -f "$MANIFEST" ]]; then
         echo "❌ Error: Documentation not found at ~/.claude-code-docs"
         echo "Please reinstall with:"
-        echo "curl -fsSL https://raw.githubusercontent.com/ericbuess/claude-code-docs/main/install.sh | bash"
+        echo "curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/install.sh | bash"
         exit 1
     fi
     
@@ -146,7 +146,7 @@ read_doc() {
                 echo ""
                 cat "$doc_path"
                 echo ""
-                echo "📖 Official page: https://docs.anthropic.com/en/docs/claude-code/$topic"
+                echo "📖 Official page: https://code.claude.com/docs/en/$topic"
                 return
             fi
         fi
@@ -183,7 +183,7 @@ read_doc() {
         if [[ "$topic" == "changelog" ]]; then
             echo "📖 Official source: https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"
         else
-            echo "📖 Official page: https://docs.anthropic.com/en/docs/claude-code/$topic"
+            echo "📖 Official page: https://code.claude.com/docs/en/$topic"
         fi
     else
         # Always show search interface - never error messages
@@ -266,13 +266,13 @@ whats_new() {
         local date=$(git show -s --format=%cr "$hash" 2>/dev/null || echo "unknown")
         
         echo "• $date:"
-        echo "  📎 https://github.com/ericbuess/claude-code-docs/commit/$hash"
+        echo "  📎 https://github.com/posimind/claude-code-docs/commit/$hash"
         
         # Show which docs changed
         local changed_docs=$(git diff-tree --no-commit-id --name-only -r "$hash" -- docs/*.md 2>/dev/null | sed 's|docs/||' | sed 's|\.md$||' | head -5)
         if [[ -n "$changed_docs" ]]; then
             echo "$changed_docs" | while read -r doc; do
-                [[ -n "$doc" ]] && echo "  📄 $doc: https://docs.anthropic.com/en/docs/claude-code/$doc"
+                [[ -n "$doc" ]] && echo "  📄 $doc: https://code.claude.com/docs/en/$doc"
             done
         fi
         echo ""
@@ -284,7 +284,7 @@ whats_new() {
         echo ""
     fi
     
-    echo "📎 Full changelog: https://github.com/ericbuess/claude-code-docs/commits/main/docs"
+    echo "📎 Full changelog: https://github.com/posimind/claude-code-docs/commits/main/docs"
     echo "📚 COMMUNITY MIRROR - NOT AFFILIATED WITH ANTHROPIC"
     
     # Re-enable strict error handling

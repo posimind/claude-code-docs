@@ -135,7 +135,7 @@ migrate_installation() {
     
     # Fresh install at new location
     echo "Installing fresh at ~/.claude-code-docs..."
-    git clone -b "$INSTALL_BRANCH" https://github.com/ericbuess/claude-code-docs.git "$INSTALL_DIR"
+    git clone -b "$INSTALL_BRANCH" https://github.com/posimind/claude-code-docs.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
     # Remove old directory if safe
@@ -374,7 +374,7 @@ else
         echo "No existing installation found"
         echo "Installing fresh to ~/.claude-code-docs..."
         
-        git clone -b "$INSTALL_BRANCH" https://github.com/ericbuess/claude-code-docs.git "$INSTALL_DIR"
+        git clone -b "$INSTALL_BRANCH" https://github.com/posimind/claude-code-docs.git "$INSTALL_DIR"
         cd "$INSTALL_DIR"
     fi
 fi
@@ -392,7 +392,7 @@ if [[ -f "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" ]]; then
 else
     echo "  ⚠️  Template file missing, attempting recovery..."
     # Try to fetch just the template file
-    if curl -fsSL "https://raw.githubusercontent.com/ericbuess/claude-code-docs/$INSTALL_BRANCH/scripts/claude-docs-helper.sh.template" -o "$INSTALL_DIR/claude-docs-helper.sh" 2>/dev/null; then
+    if curl -fsSL "https://raw.githubusercontent.com/posimind/claude-code-docs/$INSTALL_BRANCH/scripts/claude-docs-helper.sh.template" -o "$INSTALL_DIR/claude-docs-helper.sh" 2>/dev/null; then
         chmod +x "$INSTALL_DIR/claude-docs-helper.sh"
         echo "  ✓ Helper script downloaded directly"
     else
@@ -425,24 +425,24 @@ Usage:
 Examples of expected output:
 
 When reading a doc:
-📚 COMMUNITY MIRROR: https://github.com/ericbuess/claude-code-docs
-📖 OFFICIAL DOCS: https://docs.anthropic.com/en/docs/claude-code
+📚 COMMUNITY MIRROR: https://github.com/posimind/claude-code-docs
+📖 OFFICIAL DOCS: https://code.claude.com/docs/en
 
 [Doc content here...]
 
-📖 Official page: https://docs.anthropic.com/en/docs/claude-code/hooks
+📖 Official page: https://code.claude.com/docs/en/hooks
 
 When showing what's new:
 📚 Recent documentation updates:
 
 • 5 hours ago:
-  📎 https://github.com/ericbuess/claude-code-docs/commit/eacd8e1
-  📄 data-usage: https://docs.anthropic.com/en/docs/claude-code/data-usage
+  📎 https://github.com/posimind/claude-code-docs/commit/eacd8e1
+  📄 data-usage: https://code.claude.com/docs/en/data-usage
      ➕ Added: Privacy safeguards
-  📄 security: https://docs.anthropic.com/en/docs/claude-code/security
+  📄 security: https://code.claude.com/docs/en/security
      ✨ Data flow and dependencies section moved here
 
-📎 Full changelog: https://github.com/ericbuess/claude-code-docs/commits/main/docs
+📎 Full changelog: https://github.com/posimind/claude-code-docs/commits/main/docs
 📚 COMMUNITY MIRROR - NOT AFFILIATED WITH ANTHROPIC
 
 Every request checks for the latest documentation from GitHub (takes ~0.4s).
