@@ -10,6 +10,10 @@ echo "==============================="
 # Fixed installation location
 INSTALL_DIR="$HOME/.claude-code-docs"
 
+# Where the installer was started from - never deleted as an "old installation",
+# so running this script from a clone of the repo does not wipe that clone
+ORIGINAL_PWD="$(pwd)"
+
 # Branch to use for installation
 INSTALL_BRANCH="main"
 
@@ -120,8 +124,8 @@ find_existing_installations() {
     fi
     
     # Also check current directory if running from an installation
-    if [[ -f "./docs/docs_manifest.json" && "$(pwd)" != "$INSTALL_DIR" ]]; then
-        paths+=("$(pwd)")
+    if [[ -f "$ORIGINAL_PWD/docs/docs_manifest.json" && "$ORIGINAL_PWD" != "$INSTALL_DIR" ]]; then
+        paths+=("$ORIGINAL_PWD")
     fi
     
     # Deduplicate and exclude new location
@@ -155,7 +159,11 @@ migrate_installation() {
     cd "$INSTALL_DIR"
     
     # Remove old directory if safe
-    if [[ "$should_preserve" == "false" ]]; then
+    if [[ "$old_dir" == "$ORIGINAL_PWD" ]]; then
+        echo ""
+        echo "ℹ️  Old installation preserved at: $old_dir"
+        echo "   (you are running the installer from here)"
+    elif [[ "$should_preserve" == "false" ]]; then
         echo "Removing old installation..."
         rm -rf "$old_dir"
         echo "✓ Old installation removed"
@@ -330,7 +338,13 @@ cleanup_old_installations() {
         fi
         
         echo "  - $old_dir"
-        
+
+        # Never remove the directory the installer was launched from
+        if [[ "$old_dir" == "$ORIGINAL_PWD" ]]; then
+            echo "    ⚠️  Preserved (you are running the installer from here)"
+            continue
+        fi
+
         # Check if it has uncommitted changes
         if [[ -d "$old_dir/.git" ]]; then
             cd "$old_dir"

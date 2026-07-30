@@ -62,7 +62,8 @@ find_all_installations() {
                     [[ -z "$path" ]] && continue
                     path="${path/#\~/$HOME}"
                     # Clean up path to get the claude-code-docs directory
-                    if [[ "$path" =~ (.*/claude-code-docs)(/.*)?$ ]]; then
+                    # (\.? so the v0.3+ location ~/.claude-code-docs matches too)
+                    if [[ "$path" =~ (.*/\.?claude-code-docs)(/.*)?$ ]]; then
                         path="${BASH_REMATCH[1]}"
                     fi
                     [[ -d "$path" ]] && paths+=("$path")
@@ -70,7 +71,11 @@ find_all_installations() {
             fi
         done <<< "$hooks"
     fi
-    
+
+    # The v0.3+ fixed location is always a candidate - the command file and the
+    # hook may already be gone, and neither is needed to know where it lives
+    [[ -d "$INSTALL_DIR" ]] && paths+=("$INSTALL_DIR")
+
     # Deduplicate - handle empty array case
     if [[ ${#paths[@]} -gt 0 ]]; then
         printf '%s\n' "${paths[@]}" | sort -u
