@@ -1047,8 +1047,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-07-31T13:45:28.230465",
-    "fetch_duration_seconds": 167.370174,
+    "last_fetch_completed": "2026-07-31T16:33:09.500041",
+    "fetch_duration_seconds": 164.098415,
     "total_pages_discovered": 174,
     "pages_fetched_successfully": 175,
     "pages_failed": 0,
@@ -1058,7 +1058,7 @@
     "total_files": 174,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-07-31T13:45:28.230495",
+  "last_updated": "2026-07-31T16:33:09.500072",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
