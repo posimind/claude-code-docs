@@ -13,6 +13,15 @@ SCRIPT_VERSION="0.3.3"
 DOCS_PATH="$HOME/.claude-code-docs"
 MANIFEST="$DOCS_PATH/docs/docs_manifest.json"
 
+# How long a check against GitHub stays good for. The mirror is synced from the
+# official docs every 3 hours (.github/workflows/update-docs.yml), so looking
+# more often than that cannot turn up anything new.
+THROTTLE_SECONDS=10800
+LAST_CHECK="$DOCS_PATH/.last_check"
+
+# Set when an update needs install.sh re-run but the hook path could not do it
+NEEDS_REINSTALL="$DOCS_PATH/.needs_reinstall"
+
 # No colors since they don't work in terminal anyway
 
 # Enhanced sanitize function to prevent command injection
@@ -30,45 +39,118 @@ print_doc_header() {
 }
 
 
+# True when the last check against GitHub is older than the throttle window,
+# and when there has never been one. Only ever call this from a condition -
+# a bare call would trip set -e on the "not yet expired" answer.
+throttle_expired() {
+    local last
+    [[ -f "$LAST_CHECK" ]] || return 0
+    last=$(cat "$LAST_CHECK" 2>/dev/null || echo 0)
+    [[ "$last" =~ ^[0-9]+$ ]] || return 0
+    (( $(date +%s) - last >= THROTTLE_SECONDS ))
+}
+
+# Stamped before the fetch rather than after, so an unreachable GitHub costs
+# one timeout per throttle window instead of one on every single call.
+mark_checked() {
+    date +%s > "$LAST_CHECK" 2>/dev/null || true
+}
+
+# Run a git command that talks to the network, with a hard time cap. A firewall
+# that silently drops packets would otherwise hang a fetch for minutes - and in
+# the hook path that stalls Claude's Read until the hook timeout kills us.
+# timeout(1) is always there on Linux; stock macOS lacks it, so fall back to
+# curl's low-speed abort, which cuts stalled transfers (though not a hung
+# connect - best effort there).
+git_net() {
+    local cap="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$cap" git "$@"
+    else
+        GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME="$cap" git "$@"
+    fi
+}
+
+# Re-run the installer for an update that needed it. The hook path cannot do
+# this itself - install.sh re-renders claude-docs-helper.sh, which is the
+# script the hook is running inside - so it leaves the marker for whichever
+# user-facing command comes next.
+run_deferred_install() {
+    [[ -f "$NEEDS_REINSTALL" ]] || return 0
+    cd "$DOCS_PATH" 2>/dev/null || return 0
+
+    echo "🔧 Updating Claude Code Docs installer..." >&2
+    ./install.sh >/dev/null 2>&1 || true
+    rm -f "$NEEDS_REINSTALL" 2>/dev/null || true
+}
+
 # Function to auto-update docs if needed
+#
+# Two separate jobs live here:
+#   1. git pull - refreshes docs/
+#   2. ./install.sh - re-renders what git pull cannot reach: the untracked
+#      claude-docs-helper.sh, ~/.claude/commands/ and the settings.json hooks
+#
+# Pass "skip-installer" from the hook path. install.sh rewrites the very script
+# this function runs inside, which is not safe while it is executing.
+#
+# Returns 2 when GitHub is unreachable. That is a status, not a failure, so
+# every caller must keep it away from set -e.
 auto_update() {
+    local allow_installer=1
+    if [[ "${1:-}" == "skip-installer" ]]; then
+        allow_installer=0
+    fi
+
     cd "$DOCS_PATH" 2>/dev/null || return 1
-    
+
     # Get current branch
     local BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-    
-    # Quick fetch to check for updates (fast)
-    if ! git fetch --quiet origin "$BRANCH" 2>/dev/null; then
-        # Current branch doesn't exist on origin, try main
-        if ! git fetch --quiet origin main 2>/dev/null; then
+
+    mark_checked
+
+    # Quick fetch to check for updates (fast, and capped so it can never hang)
+    if ! git_net 15 fetch --quiet origin "$BRANCH" 2>/dev/null; then
+        # The branch may just not exist on origin - retry against main. But
+        # when we were already on main the retry would hit the same host with
+        # the same request, doubling the stall on a dead network: skip it.
+        if [[ "$BRANCH" == "main" ]] || ! git_net 15 fetch --quiet origin main 2>/dev/null; then
             # Fetch failed - can't sync
             return 2
         fi
         # Use main branch for comparison
         BRANCH="main"
     fi
-    
-    local LOCAL=$(git rev-parse HEAD 2>/dev/null)
+
+    local BEFORE=$(git rev-parse HEAD 2>/dev/null)
     local REMOTE=$(git rev-parse origin/"$BRANCH" 2>/dev/null)
-    
+
     # Check if we're behind remote (important: not ahead)
     local BEHIND=$(git rev-list HEAD..origin/"$BRANCH" --count 2>/dev/null || echo "0")
-    
-    if [[ "$LOCAL" != "$REMOTE" ]] && [[ "$BEHIND" -gt 0 ]]; then
-        # We're behind - safe to pull
-        echo "🔄 Updating documentation..." >&2
-        git pull --quiet origin "$BRANCH" 2>&1 | grep -v "Merge made by" || true
-        
-        # Check if installer needs updating
-        local INSTALLER_VERSION=$SCRIPT_VERSION
-        local VERSION_INT=$(echo "$INSTALLER_VERSION" | sed 's/^0\.//' | cut -d. -f1)
 
-        if [[ $VERSION_INT -ge 3 ]]; then
-            echo "🔧 Updating Claude Code Docs installer..." >&2
-            ./install.sh >/dev/null 2>&1
-        fi
+    if [[ "$BEFORE" == "$REMOTE" ]] || [[ "$BEHIND" -eq 0 ]]; then
+        return 0  # Already up-to-date, or ahead of origin
     fi
-    
+
+    # We're behind - safe to pull. Capped well under the 60s hook timeout so a
+    # killed hook can never leave a half-finished pull (and a stale git lock)
+    echo "🔄 Updating documentation..." >&2
+    git_net 30 pull --quiet origin "$BRANCH" 2>&1 | grep -v "Merge made by" || true
+
+    # Re-installing only matters when the pull changed something the installed
+    # copy is rendered from. Nearly every update touches docs/ alone.
+    if ! git diff --name-only "$BEFORE" HEAD 2>/dev/null \
+        | grep -qE '^(install\.sh|scripts/claude-docs-helper\.sh\.template)$'; then
+        return 0
+    fi
+
+    # Record it either way; the hook path leaves it for the next command to run
+    touch "$NEEDS_REINSTALL" 2>/dev/null || true
+    if [[ $allow_installer -eq 1 ]]; then
+        run_deferred_install
+    fi
+
     return 0  # Success (either updated or already up-to-date)
 }
 
@@ -84,9 +166,10 @@ show_freshness() {
         exit 1
     fi
     
-    # Try to sync with GitHub
-    auto_update
-    local sync_status=$?
+    # Try to sync with GitHub. Deliberately not throttled: -t means the user
+    # asked about freshness itself, so the answer has to be current.
+    local sync_status=0
+    auto_update || sync_status=$?
     
     if [[ $sync_status -eq 2 ]]; then
         echo "⚠️  Could not sync with GitHub (using local cache)"
@@ -136,20 +219,27 @@ read_doc() {
         local BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
         local VERSION=$SCRIPT_VERSION
         
-        # Do the fetch to check status
+        # Do the fetch to check status, at most once per throttle window.
+        # Inside the window, compare against the ref we already fetched.
         local COMPARE_BRANCH="$BRANCH"
-        if ! git fetch --quiet origin "$BRANCH" 2>/dev/null; then
-            # Try main if current branch doesn't exist on origin
-            if git fetch --quiet origin main 2>/dev/null; then
-                COMPARE_BRANCH="main"
-            else
-                echo "⚠️  Could not check GitHub for updates - using cached docs (v$VERSION, $BRANCH)"
-                echo ""
-                cat "$doc_path"
-                echo ""
-                echo "📖 Official page: https://code.claude.com/docs/en/$topic"
-                return
+        if throttle_expired; then
+            mark_checked
+            if ! git_net 15 fetch --quiet origin "$BRANCH" 2>/dev/null; then
+                # Try main if current branch doesn't exist on origin - but not
+                # when main is what just failed; retrying it only doubles the stall
+                if [[ "$BRANCH" != "main" ]] && git_net 15 fetch --quiet origin main 2>/dev/null; then
+                    COMPARE_BRANCH="main"
+                else
+                    echo "⚠️  Could not check GitHub for updates - using cached docs (v$VERSION, $BRANCH)"
+                    echo ""
+                    cat "$doc_path"
+                    echo ""
+                    echo "📖 Official page: https://code.claude.com/docs/en/$topic"
+                    return
+                fi
             fi
+        elif ! git rev-parse --verify origin/"$COMPARE_BRANCH" >/dev/null 2>&1; then
+            COMPARE_BRANCH="main"
         fi
         
         local LOCAL=$(git rev-parse HEAD 2>/dev/null)
@@ -159,14 +249,14 @@ read_doc() {
         if [[ "$LOCAL" != "$REMOTE" ]] && [[ "$BEHIND" -gt 0 ]]; then
             # We're behind - safe to update
             echo "🔄 Updating to latest documentation..."
-            git pull --quiet origin "$COMPARE_BRANCH" 2>&1 | grep -v "Merge made by" || true
-            
-            # Check if installer needs updating
-            local INSTALLER_VERSION=$SCRIPT_VERSION
-            local VERSION_INT=$(echo "$INSTALLER_VERSION" | sed 's/^0\.//' | cut -d. -f1)
+            git_net 30 pull --quiet origin "$COMPARE_BRANCH" 2>&1 | grep -v "Merge made by" || true
 
-            if [[ $VERSION_INT -ge 3 ]]; then
-                ./install.sh >/dev/null 2>&1
+            # Re-install only when the pull changed what the installed copy is
+            # rendered from - $LOCAL is the commit we were on before the pull
+            if git diff --name-only "$LOCAL" HEAD 2>/dev/null \
+                | grep -qE '^(install\.sh|scripts/claude-docs-helper\.sh\.template)$'; then
+                touch "$NEEDS_REINSTALL" 2>/dev/null || true
+                run_deferred_install
             fi
             echo "✅ Updated to latest (v$VERSION, $BRANCH)"
         else
@@ -222,9 +312,12 @@ read_doc() {
 list_docs() {
     print_doc_header
     
-    # Auto-update to ensure fresh list
-    auto_update
-    
+    # Auto-update to ensure fresh list. Throttled, and an offline run still
+    # lists whatever is already mirrored.
+    if throttle_expired; then
+        auto_update || true
+    fi
+
     echo "Available documentation topics:"
     echo ""
     ls "$DOCS_PATH/docs" | grep '\.md$' | sed 's/\.md$//' | sort | column -c 80
@@ -232,11 +325,27 @@ list_docs() {
     echo "Usage: /{{COMMAND_NAME}} <topic> or /{{COMMAND_NAME}} -t to check freshness"
 }
 
-# Function for hook check (auto-update)
+# PreToolUse hook for Read: keep the mirror fresh when Claude reads from it.
+# Reads the hook payload on stdin and always exits 0 - exit 2 from a PreToolUse
+# hook blocks the tool call, so an unreachable GitHub must never be allowed to
+# stop Claude from reading a file.
 hook_check() {
-    # This is now just a passthrough since auto_update handles everything
-    # Note: We could potentially start a background fetch here for parallelization,
-    # but since git fetch only takes ~0.37s, the complexity isn't worth it
+    local input file_path
+
+    input=$(cat 2>/dev/null || true)
+    file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
+
+    # Reads outside the mirror are none of our business, and must not be made
+    # to wait on a git fetch
+    case "$file_path" in
+        "$DOCS_PATH"/*) ;;
+        *) exit 0 ;;
+    esac
+
+    if throttle_expired; then
+        auto_update skip-installer || true
+    fi
+
     exit 0
 }
 
@@ -247,8 +356,13 @@ whats_new() {
     
     print_doc_header
     
-    # Auto-update first (synchronous - we need latest git history)
-    auto_update || true  # Don't fail if auto-update fails
+    # Auto-update first (synchronous - we need latest git history). Throttled
+    # like every automatic sync: within the window the history is at most
+    # 3 hours old, which is the mirror's own update cadence. This also keeps
+    # "-t whats new" from fetching twice - show_freshness just synced.
+    if throttle_expired; then
+        auto_update || true  # Don't fail if auto-update fails
+    fi
     
     cd "$DOCS_PATH" 2>/dev/null || {
         echo "❌ Error: Could not access documentation directory"
@@ -410,6 +524,15 @@ subagent_context() {
 
 # Store original arguments for flag checking
 FULL_ARGS="$*"
+
+# Hook entry points run inside the very script install.sh would replace, so they
+# never trigger it. Every other entry point is user-facing and is free to pick
+# up an install the hook path had to defer - except uninstall, where setting the
+# hooks back up moments before the user removes them would be absurd.
+case "${1:-}" in
+    hook-check|webfetch-guard|subagent-context|uninstall) ;;
+    *) run_deferred_install ;;
+esac
 
 # Check if arguments start with -t flag (before sanitization)
 if [[ "$FULL_ARGS" =~ ^-t([[:space:]]+(.*))?$ ]]; then

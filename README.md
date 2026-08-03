@@ -73,7 +73,7 @@ This will:
 1. Install to `~/.claude-code-docs` (or migrate existing installation)
 2. Create the `/claude-docs` slash command to pass arguments to the tool and tell it where to find the docs (rename it with `CLAUDE_DOCS_COMMAND_NAME` - see [Customize command name](#customize-command-name))
 3. Set up three hooks in `~/.claude/settings.json`, all calling the same helper script:
-   - `PreToolUse` on `Read` - pulls the latest docs when Claude reads from `~/.claude-code-docs`
+   - `PreToolUse` on `Read` - pulls the latest docs when Claude reads from `~/.claude-code-docs`, at most once every 3 hours
    - `PreToolUse` on `WebFetch` - redirects `code.claude.com` fetches to the mirrored file
    - `SubagentStart` on `claude-code-guide` - tells that subagent where the mirror is
 
@@ -179,9 +179,10 @@ Renaming the command does not affect the hooks - they are keyed to the helper sc
 
 The documentation attempts to stay current:
 - GitHub Actions runs periodically to fetch new documentation
-- When you use `/claude-docs`, it checks for updates
+- Reading from the mirror (via the hook or `/claude-docs`) checks GitHub for updates, at most once every 3 hours - the same cadence the mirror itself updates at, so checking more often could not find anything new
 - Updates are pulled when available
 - You may see "🔄 Updating documentation..." when this happens
+- `/claude-docs -t` always contacts GitHub, so use it to force a sync
 
 Note: If automatic updates fail, you can always run the installer again to get the latest version.
 
@@ -294,7 +295,7 @@ See [UNINSTALL.md](UNINSTALL.md) for manual uninstall instructions.
 ## Security Notes
 
 - The installer modifies `~/.claude/settings.json` to add three hooks, all of which run the same helper script in `~/.claude-code-docs`:
-  - `PreToolUse` on `Read` - runs `git pull` when reading documentation files
+  - `PreToolUse` on `Read` - runs `git pull` when reading documentation files, at most once every 3 hours
   - `PreToolUse` on `WebFetch` - denies `code.claude.com` fetches and names the local file instead; other hosts are ignored
   - `SubagentStart` on `claude-code-guide` - injects the mirror's location into that subagent's context
 - Hooks from previous installs are removed on install and on uninstall, matched by `claude-code-docs` appearing in the command; hooks you added yourself are left alone

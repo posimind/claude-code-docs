@@ -73,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/posimind/claude-code-docs/main/inst
 1. `~/.claude-code-docs`에 설치 (기존 설치가 있으면 이전)
 2. `/claude-docs` 슬래시 명령 생성 — 인자를 도구에 전달하고 문서 위치를 알려줍니다 (이름 변경은 `CLAUDE_DOCS_COMMAND_NAME` 사용, [명령어 이름 변경](#명령어-이름-변경) 참고)
 3. `~/.claude/settings.json`에 훅 3개 등록 — 모두 동일한 헬퍼 스크립트를 호출합니다:
-   - `Read`에 걸린 `PreToolUse` — Claude가 `~/.claude-code-docs`에서 읽을 때 최신 문서를 pull
+   - `Read`에 걸린 `PreToolUse` — Claude가 `~/.claude-code-docs`에서 읽을 때 최신 문서를 pull (최대 3시간에 1회)
    - `WebFetch`에 걸린 `PreToolUse` — `code.claude.com` 가져오기를 미러된 파일로 리다이렉트
    - `claude-code-guide`에 걸린 `SubagentStart` — 해당 서브에이전트에게 미러 위치를 알림
 
@@ -179,9 +179,10 @@ CLAUDE_DOCS_COMMAND_NAME=cdocs bash /tmp/install.sh
 
 문서는 다음과 같이 최신 상태를 유지하려 합니다:
 - GitHub Actions가 주기적으로 실행되어 새 문서를 가져옵니다
-- `/claude-docs`를 사용할 때 업데이트를 확인합니다
+- 미러를 읽을 때(훅 또는 `/claude-docs`) GitHub에 업데이트를 확인하되, 최대 3시간에 1회만 확인합니다 — 미러 자체가 3시간 간격으로 갱신되므로 더 자주 확인해도 새 내용이 있을 수 없습니다
 - 업데이트가 있으면 pull합니다
 - 이때 "🔄 Updating documentation..." 메시지가 보일 수 있습니다
+- `/claude-docs -t`는 항상 GitHub에 접속하므로, 즉시 동기화를 강제할 때 사용하세요
 
 참고: 자동 업데이트가 실패하면 설치 스크립트를 다시 실행해 최신 버전을 받을 수 있습니다.
 
@@ -294,7 +295,7 @@ Claude Code 관련 질문에서 여전히 `WebFetch`가 실패한다면:
 ## 보안 참고 사항
 
 - 설치 스크립트는 `~/.claude/settings.json`을 수정해 훅 3개를 추가합니다. 모두 `~/.claude-code-docs`의 동일한 헬퍼 스크립트를 실행합니다:
-  - `Read`에 걸린 `PreToolUse` — 문서 파일을 읽을 때 `git pull` 실행
+  - `Read`에 걸린 `PreToolUse` — 문서 파일을 읽을 때 `git pull` 실행 (최대 3시간에 1회)
   - `WebFetch`에 걸린 `PreToolUse` — `code.claude.com` 가져오기를 거부하고 로컬 파일을 대신 알려줌. 다른 호스트는 무시
   - `claude-code-guide`에 걸린 `SubagentStart` — 해당 서브에이전트의 컨텍스트에 미러 위치를 주입
 - 이전 설치의 훅은 설치 시와 제거 시에 모두 삭제됩니다. 명령에 `claude-code-docs`가 포함되어 있는지로 판별하므로, 직접 추가한 훅은 그대로 남습니다

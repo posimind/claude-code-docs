@@ -413,25 +413,31 @@ fi
 echo ""
 echo "Setting up Claude Code Docs v0.3.3..."
 
-# Replace {{COMMAND_NAME}} placeholders with the configured command name
+# Replace {{COMMAND_NAME}} placeholders with the configured command name,
+# rendering a template into its destination.
 # (portable across GNU and BSD sed - no in-place flag)
+#
+# The result lands on a temp file and is moved into place. That matters because
+# the helper script re-runs this installer after pulling an update, so the
+# destination can be the very script that is executing: mv swaps the inode,
+# where an in-place write would change the bytes bash is still reading.
 render_command_name() {
-    local file="$1"
-    sed "s/{{COMMAND_NAME}}/$COMMAND_NAME/g" "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+    local src="$1" dest="$2"
+    sed "s/{{COMMAND_NAME}}/$COMMAND_NAME/g" "$src" > "$dest.tmp" && mv "$dest.tmp" "$dest"
 }
 
-# Copy helper script from template
+# Render helper script from template
 echo "Installing helper script..."
 if [[ -f "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" ]]; then
-    cp "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" "$INSTALL_DIR/claude-docs-helper.sh"
-    render_command_name "$INSTALL_DIR/claude-docs-helper.sh"
+    render_command_name "$INSTALL_DIR/scripts/claude-docs-helper.sh.template" "$INSTALL_DIR/claude-docs-helper.sh"
     chmod +x "$INSTALL_DIR/claude-docs-helper.sh"
     echo "✓ Helper script installed"
 else
     echo "  ⚠️  Template file missing, attempting recovery..."
     # Try to fetch just the template file
-    if curl -fsSL "https://raw.githubusercontent.com/posimind/claude-code-docs/$INSTALL_BRANCH/scripts/claude-docs-helper.sh.template" -o "$INSTALL_DIR/claude-docs-helper.sh" 2>/dev/null; then
-        render_command_name "$INSTALL_DIR/claude-docs-helper.sh"
+    if curl -fsSL "https://raw.githubusercontent.com/posimind/claude-code-docs/$INSTALL_BRANCH/scripts/claude-docs-helper.sh.template" -o "$INSTALL_DIR/claude-docs-helper.sh.download" 2>/dev/null; then
+        render_command_name "$INSTALL_DIR/claude-docs-helper.sh.download" "$INSTALL_DIR/claude-docs-helper.sh"
+        rm -f "$INSTALL_DIR/claude-docs-helper.sh.download"
         chmod +x "$INSTALL_DIR/claude-docs-helper.sh"
         echo "  ✓ Helper script downloaded directly"
     else
@@ -484,7 +490,9 @@ When showing what's new:
 📎 Full changelog: https://github.com/posimind/claude-code-docs/commits/main/docs
 📚 COMMUNITY MIRROR - NOT AFFILIATED WITH ANTHROPIC
 
-Every request checks for the latest documentation from GitHub (takes ~0.4s).
+The mirror syncs with GitHub at most once every 3 hours (matching how often
+the mirror itself is updated), so most requests are instant local reads.
+/$COMMAND_NAME -t always contacts GitHub and can be used to force a sync.
 The helper script handles all functionality including auto-updates.
 
 Execute: ~/.claude-code-docs/claude-docs-helper.sh "\$ARGUMENTS"
@@ -494,6 +502,11 @@ echo "✓ Created /$COMMAND_NAME command"
 
 # Record the command name so the uninstaller removes the right file
 echo "$COMMAND_NAME" > "$INSTALL_DIR/.command_name"
+
+# This install just cloned or pulled, so the mirror is as fresh as GitHub has
+# it. Start the auto-update throttle window now - without this stamp the very
+# first mirror read would fetch again seconds after installing.
+date +%s > "$INSTALL_DIR/.last_check" 2>/dev/null || true
 
 # Warn about a leftover /docs command from an older install
 if [[ "$COMMAND_NAME" != "docs" && -f "$LEGACY_COMMAND_FILE" ]] && grep -q "claude-code-docs" "$LEGACY_COMMAND_FILE" 2>/dev/null; then
