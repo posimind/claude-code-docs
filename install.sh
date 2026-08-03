@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Claude Code Docs Installer v0.3.3 - Changelog integration and compatibility improvements
+# Claude Code Docs Installer v0.4.1 - Working auto-update with 3-hour throttle
 # This script installs/migrates claude-code-docs to ~/.claude-code-docs
 
-echo "Claude Code Docs Installer v0.3.3"
+echo "Claude Code Docs Installer v0.4.1"
 echo "==============================="
 
 # Fixed installation location
@@ -411,7 +411,7 @@ fi
 
 # Now we're in $INSTALL_DIR, set up the new script-based system
 echo ""
-echo "Setting up Claude Code Docs v0.3.3..."
+echo "Setting up Claude Code Docs v0.4.1..."
 
 # Replace {{COMMAND_NAME}} placeholders with the configured command name,
 # rendering a template into its destination.
@@ -473,6 +473,8 @@ When reading a doc:
 📚 COMMUNITY MIRROR: https://github.com/posimind/claude-code-docs
 📖 OFFICIAL DOCS: https://code.claude.com/docs/en
 
+✅ You have the latest docs (v0.4.1, main)
+
 [Doc content here...]
 
 📖 Official page: https://code.claude.com/docs/en/hooks
@@ -483,9 +485,7 @@ When showing what's new:
 • 5 hours ago:
   📎 https://github.com/posimind/claude-code-docs/commit/eacd8e1
   📄 data-usage: https://code.claude.com/docs/en/data-usage
-     ➕ Added: Privacy safeguards
   📄 security: https://code.claude.com/docs/en/security
-     ✨ Data flow and dependencies section moved here
 
 📎 Full changelog: https://github.com/posimind/claude-code-docs/commits/main/docs
 📚 COMMUNITY MIRROR - NOT AFFILIATED WITH ANTHROPIC
@@ -568,7 +568,7 @@ cleanup_old_installations
 
 # Success message
 echo ""
-echo "✅ Claude Code Docs v0.3.3 installed successfully!"
+echo "✅ Claude Code Docs v0.4.1 installed successfully!"
 echo ""
 echo "📚 Command: /$COMMAND_NAME (user)"
 echo "📂 Location: ~/.claude-code-docs"
