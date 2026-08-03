@@ -69,11 +69,17 @@ def load_manifest(docs_dir: Path) -> dict:
     return {"files": {}, "last_updated": None}
 
 
-def save_manifest(docs_dir: Path, manifest: dict) -> None:
-    """Save the manifest of fetched files."""
+def save_manifest(docs_dir: Path, manifest: dict, last_updated: Optional[str] = None) -> None:
+    """
+    Save the manifest of fetched files.
+
+    Pass last_updated to keep the timestamp of a previous run. Stamping the
+    current time on every run would make the manifest differ even when no
+    documentation changed, which turns every scheduled run into a commit.
+    """
     manifest_path = docs_dir / MANIFEST_FILE
-    manifest["last_updated"] = datetime.now().isoformat()
-    
+    manifest["last_updated"] = last_updated or datetime.now().isoformat()
+
     # Get GitHub repository from environment or use default
     github_repo = os.environ.get('GITHUB_REPOSITORY', 'posimind/claude-code-docs')
     github_ref = os.environ.get('GITHUB_REF_NAME', 'main')
@@ -453,6 +459,22 @@ def save_markdown_file(docs_dir: Path, filename: str, content: str) -> str:
         raise
 
 
+def carry_over_failed_page(docs_dir: Path, filename: str, manifest: dict) -> Optional[dict]:
+    """
+    Return the previous manifest entry for a page we failed to fetch this run.
+
+    A page that is unreachable right now is not a page that went away: keeping
+    its entry stops cleanup_old_files() from deleting the copy we already
+    mirrored, and leaves the hash in place so the next run can tell whether the
+    content actually changed. Returns None when we have nothing to fall back on.
+    """
+    old_entry = manifest.get("files", {}).get(filename)
+    if old_entry and (docs_dir / filename).exists():
+        logger.info(f"Keeping previously mirrored copy: {filename}")
+        return old_entry
+    return None
+
+
 def cleanup_old_files(docs_dir: Path, current_files: Set[str], manifest: dict) -> None:
     """
     Remove only files that were previously fetched but no longer exist.
@@ -493,6 +515,8 @@ def main():
     failed = 0
     failed_pages = []
     fetched_files = set()
+    # Files we could not fetch this run but still hold a good copy of
+    preserved_files = set()
     new_manifest = {"files": {}}
     
     # Create a session for connection pooling
@@ -576,6 +600,12 @@ def main():
                 logger.error(f"Failed to process {page_path}: {e}")
                 failed += 1
                 failed_pages.append(page_path)
+
+                filename = url_to_safe_filename(page_path)
+                old_entry = carry_over_failed_page(docs_dir, filename, manifest)
+                if old_entry:
+                    new_manifest["files"][filename] = old_entry
+                    preserved_files.add(filename)
     
     # Fetch Claude Code changelog
     logger.info("Fetching Claude Code changelog...")
@@ -610,9 +640,20 @@ def main():
         logger.error(f"Failed to fetch changelog: {e}")
         failed += 1
         failed_pages.append("changelog")
-    
-    # Clean up old files (only those we previously fetched)
-    cleanup_old_files(docs_dir, fetched_files, manifest)
+
+        old_entry = carry_over_failed_page(docs_dir, "changelog.md", manifest)
+        if old_entry:
+            new_manifest["files"]["changelog.md"] = old_entry
+            preserved_files.add("changelog.md")
+
+    # Clean up old files (only those we previously fetched).
+    # Skipped when sitemap discovery fell back to a hardcoded handful of pages -
+    # every page missing from that list would otherwise look obsolete and the
+    # bulk of the mirror would be deleted over one bad request
+    if sitemap_url:
+        cleanup_old_files(docs_dir, fetched_files | preserved_files, manifest)
+    else:
+        logger.warning("Sitemap discovery failed - skipping cleanup of obsolete files")
     
     # Add metadata to manifest
     new_manifest["fetch_metadata"] = {
@@ -624,13 +665,23 @@ def main():
         "failed_pages": failed_pages,
         "sitemap_url": sitemap_url,
         "base_url": base_url,
-        "total_files": len(fetched_files),
+        "total_files": len(fetched_files | preserved_files),
         "fetch_tool_version": "3.0"
     }
-    
+
+    # Nothing about the mirrored documentation changed, so carry the previous
+    # run's timing over instead of writing a fresh timestamp and duration - they
+    # are the only fields that differ, and rewriting them produces a manifest
+    # diff (and therefore a commit) on every scheduled run
+    preserved_last_updated = None
+    if manifest.get("files") == new_manifest["files"] and "fetch_metadata" in manifest:
+        logger.info("No documentation changed - keeping previous fetch metadata")
+        new_manifest["fetch_metadata"] = manifest["fetch_metadata"]
+        preserved_last_updated = manifest.get("last_updated")
+
     # Save new manifest
-    save_manifest(docs_dir, new_manifest)
-    
+    save_manifest(docs_dir, new_manifest, last_updated=preserved_last_updated)
+
     # Summary
     duration = datetime.now() - start_time
     logger.info("\n" + "="*50)

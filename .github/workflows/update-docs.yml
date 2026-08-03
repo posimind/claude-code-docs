@@ -43,16 +43,16 @@ jobs:
     - name: Check for changes
       id: verify-changed-files
       run: |
-        git diff --exit-code || echo "changed=true" >> $GITHUB_OUTPUT
-    
+        # Stage first, then compare against HEAD - an unstaged diff would miss
+        # newly added documentation pages, which git treats as untracked
+        git add -A docs/
+        git diff --cached --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+
     - name: Generate commit message
       if: steps.verify-changed-files.outputs.changed == 'true'
       id: commit-msg
       run: |
-        # Stage changes to see what will be committed
-        git add -A docs/
-        
-        # Get list of changed files
+        # Get list of changed files (already staged in the previous step)
         CHANGED_FILES=$(git diff --name-status --cached | grep "^M" | cut -f2 | grep -E "\.md$" | sed 's/docs\///' | paste -sd ", " -)
         ADDED_FILES=$(git diff --name-status --cached | grep "^A" | cut -f2 | grep -E "\.md$" | sed 's/docs\///' | paste -sd ", " -)
         DELETED_FILES=$(git diff --name-status --cached | grep "^D" | cut -f2 | grep -E "\.md$" | sed 's/docs\///' | paste -sd ", " -)
@@ -74,8 +74,11 @@ jobs:
         
         echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
     
+    # Guarded on fetch_failed: the fetch step is continue-on-error, so a run
+    # that died partway leaves the docs half-updated and the manifest unwritten.
+    # Committing that would publish a mirror inconsistent with its own manifest
     - name: Commit and push if changed
-      if: steps.verify-changed-files.outputs.changed == 'true'
+      if: steps.verify-changed-files.outputs.changed == 'true' && steps.fetch-docs.outputs.fetch_failed != 'true'
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
@@ -93,6 +96,6 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: `Documentation update failed - ${date}`,
-            body: `The automated documentation update failed on ${date}.\n\nPlease check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`,
+            body: `The automated documentation update failed on ${date}. Nothing was committed - the mirror is unchanged.\n\nPlease check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`,
             labels: ['bug', 'automation']
           })
