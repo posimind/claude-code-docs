@@ -193,7 +193,7 @@ The server's configured value expands from the live process environment, like th
 | `allowedMcpServers` | The environment Claude Code started with, plus `env` values from managed settings                                                                                                                   | Claude Code ignores the entry                                         |
 | `deniedMcpServers`  | The same, and a variable with no startup value and no `:-default` fills from settings files outside the repository, such as user or managed settings, which only ever widens what the entry matches | The entry still matches                                               |
 
-Before v2.1.219, both sides expanded from the same live process environment, which included variables set by settings files.
+Requires Claude Code v2.1.219 or later.
 
 ### Example configuration
 
