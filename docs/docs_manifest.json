@@ -213,8 +213,8 @@
     "agent-teams.md": {
       "original_url": "https://code.claude.com/docs/en/agent-teams",
       "original_md_url": "https://code.claude.com/docs/en/agent-teams.md",
-      "hash": "a23c4406dbcd6f1eccd5803eab877e6ca84e9d6df9c5922e123fa7f63457cc59",
-      "last_updated": "2026-08-15T06:22:04.128550"
+      "hash": "d3108be7f6817bf25a0cdf8ec41529c5270bee094183626e4cb824c7c6d972c9",
+      "last_updated": "2026-08-15T18:16:23.807308"
     },
     "agent-view.md": {
       "original_url": "https://code.claude.com/docs/en/agent-view",
@@ -1125,8 +1125,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-08-15T15:14:36.864663",
-    "fetch_duration_seconds": 169.157515,
+    "last_fetch_completed": "2026-08-15T18:18:50.107279",
+    "fetch_duration_seconds": 183.800347,
     "total_pages_discovered": 187,
     "pages_fetched_successfully": 188,
     "pages_failed": 0,
@@ -1136,7 +1136,7 @@
     "total_files": 187,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-08-15T15:14:36.864706",
+  "last_updated": "2026-08-15T18:18:50.107340",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
