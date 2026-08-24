@@ -796,8 +796,8 @@
     "quickstart.md": {
       "original_url": "https://code.claude.com/docs/en/quickstart",
       "original_md_url": "https://code.claude.com/docs/en/quickstart.md",
-      "hash": "6a7a0a38ced1235db962c3cd321c05a4370dc68732c9b41780d47ee489b33e0e",
-      "last_updated": "2026-08-22T21:14:27.316743"
+      "hash": "a11c7b3caeac3debfebd7f916c8fe358d52a48f2f74dbd79de7f8966be096573",
+      "last_updated": "2026-08-24T18:28:48.994832"
     },
     "remote-control.md": {
       "original_url": "https://code.claude.com/docs/en/remote-control",
@@ -1149,8 +1149,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-08-23T03:44:49.954071",
-    "fetch_duration_seconds": 167.029414,
+    "last_fetch_completed": "2026-08-24T18:29:58.166604",
+    "fetch_duration_seconds": 202.354758,
     "total_pages_discovered": 191,
     "pages_fetched_successfully": 192,
     "pages_failed": 0,
@@ -1160,7 +1160,7 @@
     "total_files": 191,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-08-23T03:44:49.954137",
+  "last_updated": "2026-08-24T18:29:58.166708",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
