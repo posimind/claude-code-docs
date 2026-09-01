@@ -165,8 +165,8 @@
     "agent-sdk__subagents.md": {
       "original_url": "https://code.claude.com/docs/en/agent-sdk/subagents",
       "original_md_url": "https://code.claude.com/docs/en/agent-sdk/subagents.md",
-      "hash": "0f2e497a7ed516f81e702b3b7ed3aa6775a4e96119b25982fa6a2f10c184c902",
-      "last_updated": "2026-08-31T18:29:04.842351"
+      "hash": "74ec0f8f4f1690b1eebcb3879f0215ffa456d67995730e6bb35d0cfb81db5382",
+      "last_updated": "2026-09-01T00:14:43.393231"
     },
     "agent-sdk__todo-tracking.md": {
       "original_url": "https://code.claude.com/docs/en/agent-sdk/todo-tracking",
@@ -267,8 +267,8 @@
     "changelog.md": {
       "original_url": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
       "original_raw_url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
-      "hash": "d3ca03b04d866d4f3ccd5ad027b9d0fbbfe54f12f27466516527991651d921a5",
-      "last_updated": "2026-08-28T23:48:35.591157",
+      "hash": "217d77bbe138ccdea6505edb21122054001f1f49ea0366be7c9855de1f1b2cf8",
+      "last_updated": "2026-09-01T00:17:50.581964",
       "source": "claude-code-repository"
     },
     "channels.md": {
@@ -1149,8 +1149,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-08-31T18:33:16.578748",
-    "fetch_duration_seconds": 307.766638,
+    "last_fetch_completed": "2026-09-01T00:17:50.582011",
+    "fetch_duration_seconds": 259.435284,
     "total_pages_discovered": 191,
     "pages_fetched_successfully": 192,
     "pages_failed": 0,
@@ -1160,7 +1160,7 @@
     "total_files": 191,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-08-31T18:33:16.578788",
+  "last_updated": "2026-09-01T00:17:50.582053",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
