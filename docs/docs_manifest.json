@@ -304,8 +304,8 @@
     "claude-apps-gateway-config.md": {
       "original_url": "https://code.claude.com/docs/en/claude-apps-gateway-config",
       "original_md_url": "https://code.claude.com/docs/en/claude-apps-gateway-config.md",
-      "hash": "fccdefd966e2e36e6a8ed1218414b8a4d9893d5333a4b0423a8cc642c26ddefd",
-      "last_updated": "2026-09-10T22:52:15.636032"
+      "hash": "3257bfe37d57f4673a2bd0a0cd20daf9780ff3a718ac81280970d97368c04245",
+      "last_updated": "2026-09-11T02:10:10.039062"
     },
     "claude-apps-gateway-deploy.md": {
       "original_url": "https://code.claude.com/docs/en/claude-apps-gateway-deploy",
@@ -1149,8 +1149,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-09-10T22:54:18.724898",
-    "fetch_duration_seconds": 170.291222,
+    "last_fetch_completed": "2026-09-11T02:12:26.111925",
+    "fetch_duration_seconds": 187.015095,
     "total_pages_discovered": 191,
     "pages_fetched_successfully": 192,
     "pages_failed": 0,
@@ -1160,7 +1160,7 @@
     "total_files": 191,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-09-10T22:54:18.724933",
+  "last_updated": "2026-09-11T02:12:26.111982",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
