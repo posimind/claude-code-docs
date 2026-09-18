@@ -318,7 +318,15 @@ Managed policy CLAUDE.md files cannot be excluded. This ensures organization-wid
 
 ## AGENTS.md
 
-If your repository already has an `AGENTS.md` and no `CLAUDE.md`, Claude reads it as your project instructions and you don't need to add a `CLAUDE.md`, an import, or a setting. `AGENTS.md` is a markdown file of project instructions you write for AI coding agents. If you also have a `CLAUDE.md` in your working directory or a directory above it, Claude reads that instead by default; to have Claude read both files, [change the **Project instructions** setting](#choose-which-instruction-files-load). If your `CLAUDE.md` already [imports `AGENTS.md`](#share-one-file-with-other-coding-tools), you don't need to change anything.
+Claude Code can read [`AGENTS.md`](/docs/en/glossary#agents-md) as your project instructions, so a repository already set up for other coding agents works without adding a `CLAUDE.md`, an import, or a setting. This table shows what Claude reads by default for each combination of instruction files in your repository:
+
+| Your repository has                                                                           | Claude reads                                                   |
+| :-------------------------------------------------------------------------------------------- | :------------------------------------------------------------- |
+| An `AGENTS.md`, and no `CLAUDE.md` or `CLAUDE.local.md` in your working directory or above it | Your `AGENTS.md`                                               |
+| An `AGENTS.md` and a `CLAUDE.md` or `CLAUDE.local.md` in your working directory or above it   | Your `CLAUDE.md` files only                                    |
+| A `CLAUDE.md` that already [imports `AGENTS.md`](#share-one-file-with-other-coding-tools)     | Your `CLAUDE.md`, with `AGENTS.md` included through the import |
+
+To change the default, for example to have Claude always read both files, read only `CLAUDE.md`, or read only your organization's managed instructions, [change the **Project instructions** setting](#choose-which-instruction-files-load).
 
 <Note>
   Reading `AGENTS.md` directly requires Claude Code v2.1.277 or later. In some sessions, such as those on Amazon Bedrock or with telemetry disabled, Claude [can't read `AGENTS.md`](#when-agents-md-support-is-unavailable), so [import it from a `CLAUDE.md`](#share-one-file-with-other-coding-tools) there instead.
@@ -326,36 +334,32 @@ If your repository already has an `AGENTS.md` and no `CLAUDE.md`, Claude reads i
 
 ### When Claude Code reads AGENTS.md
 
-By default, Claude checks your working directory and every directory above it, up to the filesystem root, before deciding what to read:
+By default, Claude reads `AGENTS.md` only when you have no `CLAUDE.md` in your working directory or above it. Here's which of your files count for that check:
 
-* **You have a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` there**: Claude reads your `CLAUDE.md` files as described in [How CLAUDE.md files load](#how-claude-md-files-load) and ignores every `AGENTS.md`.
-* **You have none of those**: Claude reads every `AGENTS.md` and `.claude/AGENTS.md` in your working directory and the directories above it. In an interactive session you see a line such as `no CLAUDE.md found; AGENTS.md loaded: /home/you/repo/AGENTS.md` in the conversation. When Claude later reads a file in a subdirectory that has its own `AGENTS.md` and no `CLAUDE.md`, it picks up that `AGENTS.md` too.
+* **Count, so Claude reads them instead of `AGENTS.md`**: a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` in your working directory or any directory above it
+* **Don't count, and keep loading alongside `AGENTS.md`**: your `~/.claude/CLAUDE.md`, your organization's managed `CLAUDE.md`, and `.claude/rules/` files
 
-Your `~/.claude/CLAUDE.md`, your organization's managed `CLAUDE.md`, and your `.claude/rules/` files don't affect this check, and Claude keeps reading them alongside `AGENTS.md`. Keep personal instructions that apply to every project in `~/.claude/CLAUDE.md`.
+When none count, here's what Claude reads and how you can tell:
 
-A `CLAUDE.local.md` does affect the check. If you add one for private notes in a project that relies on `AGENTS.md`, Claude stops reading `AGENTS.md` for you. To get both, set **Project instructions** to [`claude-md-and-agents-md`](#choose-which-instruction-files-load).
+* **At session start**: every `AGENTS.md` and `.claude/AGENTS.md` in your working directory and the directories above it. In an interactive session you see a line such as `no CLAUDE.md found; AGENTS.md loaded: /home/you/repo/AGENTS.md` in the conversation
+* **As Claude works in subdirectories**: a subdirectory's `AGENTS.md`, when Claude opens a file there with the Read tool and that subdirectory has none of the three `CLAUDE.md` files of its own
+* **Inside each `AGENTS.md`**: [`@path` imports](#import-additional-files) are expanded, [`claudeMdExcludes`](#exclude-specific-claude-md-files) patterns apply, and subagents that [skip project instructions](/docs/en/sub-agents#what-loads-at-startup) skip these files too
+* **Not read**: `AGENTS.local.md`, `AGENTS.override.md`, or anything under a `.agents/` directory
 
-Once Claude reads your `AGENTS.md`, you can treat it as you would a project `CLAUDE.md`:
-
-* Use [`@path` imports](#import-additional-files) in it
-* Exclude it with [`claudeMdExcludes`](#exclude-specific-claude-md-files)
-* Expect subagents that [skip project instructions](/docs/en/sub-agents#what-loads-at-startup) to skip it too
+<Note>
+  Because `CLAUDE.local.md` counts, adding one to keep your own uncommitted instructions in a project that relies on `AGENTS.md` stops Claude from reading `AGENTS.md` for you. To keep your `CLAUDE.local.md` and still have Claude read `AGENTS.md`, set **Project instructions** to [`claude-md-and-agents-md`](#choose-which-instruction-files-load).
+</Note>
 
 ### Choose which instruction files load
 
 To change which files Claude reads, type `/config` in a Claude Code session to open the settings panel, then set **Project instructions** to one of these values:
 
-| Value                     | What Claude reads                                                                                                                                                                                        |
-| :------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `claude-md-or-agents-md`  | Your `CLAUDE.md` files, or your `AGENTS.md` files when you have no `CLAUDE.md` in your working directory or above it. This is the default                                                                |
-| `claude-md-and-agents-md` | Your `CLAUDE.md` and `AGENTS.md` files together, each directory's `AGENTS.md` after its `CLAUDE.md`                                                                                                      |
-| `claude-md`               | Your `CLAUDE.md` files only                                                                                                                                                                              |
-| `managed-only`            | Only your organization's managed `CLAUDE.md` and [auto memory](#auto-memory) at launch. Your project, local, and user `CLAUDE.md` files, your `.claude/rules/` files, and every `AGENTS.md` are left out |
-
-Two of these values have details worth knowing before you pick them:
-
-* With `claude-md-and-agents-md`, if your `CLAUDE.md` already imports or symlinks to the `AGENTS.md` beside it, you get that content once, not twice.
-* With `managed-only`, Claude still reads a subdirectory's `CLAUDE.md` and `.claude/rules/` files when it reads a file in that subdirectory, and still applies [path-scoped rules](#path-specific-rules).
+| Value                     | What Claude reads                                                                                                                                                                                                                                                                                                                                           |
+| :------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `claude-md-or-agents-md`  | Your `CLAUDE.md` files, or your `AGENTS.md` files when you have no `CLAUDE.md` or `CLAUDE.local.md` in your working directory or above it. This is the default                                                                                                                                                                                              |
+| `claude-md-and-agents-md` | Your `CLAUDE.md` and `AGENTS.md` files together, each directory's `CLAUDE.md` files first and its `AGENTS.md` after them. Claude Code skips an `AGENTS.md` it has already loaded, so one that your `CLAUDE.md` imports or symlinks to isn't read twice                                                                                                      |
+| `claude-md`               | Your `CLAUDE.md` files only                                                                                                                                                                                                                                                                                                                                 |
+| `managed-only`            | Only your organization's managed `CLAUDE.md` and [auto memory](#auto-memory) at launch. Your project, local, and user `CLAUDE.md` files, your `.claude/rules/` files, and every `AGENTS.md` are left out. A subdirectory's `CLAUDE.md` and `.claude/rules/` files, and [path-scoped rules](#path-specific-rules), still load when Claude reads a file there |
 
 You can also set the value in a settings file instead of `/config`. Add it under the built-in `agents-md` plugin's ID in [`pluginConfigs`](/docs/en/settings-reference#pluginconfigs), in `~/.claude/settings.json`, a `--settings` file, or [managed settings](/docs/en/managed-settings). Claude Code ignores it in project and local settings files. This example has Claude read both files:
 
@@ -373,7 +377,7 @@ Your change applies from the next message you send and in every new session.
 
 ### When AGENTS.md support is unavailable
 
-In these sessions Claude reads `CLAUDE.md` files only, and you won't see **Project instructions** in the `/config` settings panel:
+In these sessions Claude reads `CLAUDE.md` files only, and **Project instructions** doesn't appear in the `/config` settings panel:
 
 * You're on a Claude Code version before v2.1.277
 * Your session doesn't [fetch feature flags from Anthropic](/docs/en/env-vars#features-that-need-feature-flag-fetching), for example because you use Amazon Bedrock or another third-party provider, or you disabled telemetry. The linked section has the full list
@@ -384,18 +388,20 @@ To give Claude your `AGENTS.md` in these sessions, [import it from a `CLAUDE.md`
 
 ### Where AGENTS.md differs from CLAUDE.md
 
-An `AGENTS.md` that Claude reads through the **Project instructions** setting differs from a `CLAUDE.md` in these ways:
+An `AGENTS.md` that Claude reads through the **Project instructions** setting differs from a `CLAUDE.md` in these places:
 
-* You won't see it in `/memory` or in the **Memory files** list in `/context`. To confirm Claude read it, look for the [`AGENTS.md loaded` line](#when-claude-code-reads-agents-md) or ask Claude what its project instructions say. With `claude-md-and-agents-md` there's no such line, so ask Claude
-* Your [`InstructionsLoaded` hooks](/docs/en/hooks#instructionsloaded) don't fire when Claude reads it directly. They fire as usual when a `CLAUDE.md` imports or symlinks to it
-* If you set [`CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD`](#load-from-additional-directories), Claude reads the `CLAUDE.md` from each directory you add with `--add-dir`, but not its `AGENTS.md`
-* If your `AGENTS.md` imports a file outside your working directory with `@path`, Claude reads that file only if you already approved [external imports](#import-additional-files) for this project. You aren't prompted to approve it from `AGENTS.md`
+|                                                                                                                                       | `CLAUDE.md`                                                                  | `AGENTS.md` read through the setting                                                                                                                                                      |
+| :------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/memory` and the **Memory files** list in `/context`                                                                                 | Listed                                                                       | Not listed. To confirm Claude read it, look for the [`AGENTS.md loaded` line](#when-claude-code-reads-agents-md) under the default value, or ask Claude what its project instructions say |
+| [`InstructionsLoaded` hooks](/docs/en/hooks#instructionsloaded)                                                                            | Fire                                                                         | Don't fire. They fire as usual for an `AGENTS.md` that a `CLAUDE.md` imports or symlinks to                                                                                               |
+| Directories you add with `--add-dir` while [`CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD`](#load-from-additional-directories) is set | Their `CLAUDE.md` loads                                                      | Their `AGENTS.md` doesn't load                                                                                                                                                            |
+| An `@path` import of a file outside your working directory                                                                            | Claude Code asks you to approve [external imports](#import-additional-files) | Loads only if you already approved external imports for this project, with no prompt                                                                                                      |
 
 ### Remove an earlier AGENTS.md workaround
 
 If you set Claude Code up to read `AGENTS.md` before it did so on its own, here's what to do with each common setup:
 
-* **A `CLAUDE.md` containing `@AGENTS.md`**: nothing. It keeps working, and it's still the right setup if some of your sessions [can't load `AGENTS.md`](#when-agents-md-support-is-unavailable). If the file holds nothing else and all your sessions can load `AGENTS.md`, you can delete it.
+* **A `CLAUDE.md` containing `@AGENTS.md`**: you can leave it. Keeping the import never makes Claude read `AGENTS.md` twice, whichever **Project instructions** value you use. Remove the `CLAUDE.md` if it holds nothing else, or keep it if some of your sessions [can't load `AGENTS.md` directly](#when-agents-md-support-is-unavailable).
 * **A `CLAUDE.md` that tells Claude in words to read `AGENTS.md`**: Claude sees `AGENTS.md` only if it decides to open the file. Delete the `CLAUDE.md` so Claude reads `AGENTS.md` directly, or replace the sentence with an `@AGENTS.md` import.
 * **A `CLAUDE.md` symlinked to `AGENTS.md`**: nothing, or delete the symlink. Either way Claude reads the content once.
 * **A `SessionStart` hook that prints `AGENTS.md`**: remove it. Once Claude reads `AGENTS.md` directly, the hook adds a second copy to the context.
@@ -418,7 +424,10 @@ If you don't need Claude-specific content, a symlink also works:
 ln -s AGENTS.md CLAUDE.md
 ```
 
-The command prints no output on success. On Windows, creating a symlink requires Administrator privileges or Developer Mode, so use the `@AGENTS.md` import instead.
+The command prints no output on success. Before you choose the symlink over the import, check these constraints:
+
+* **Editing**: Claude reads `CLAUDE.md` through the link, but the Edit and Write tools [refuse to write through a symlink](/docs/en/errors#refusing-after-a-symlink-changed), and the refusal directs Claude to edit the link's target, `AGENTS.md`, instead
+* **Windows**: if you or anyone who clones the repository works on Windows, use the `@AGENTS.md` import instead. Creating a symlink there needs Administrator privileges or Developer Mode, and Git checks a committed symlink out as a plain text file unless `core.symlinks` is enabled, which leaves that clone with a one-line `CLAUDE.md` in place of your instructions
 
 With either approach, run `/context` in your next session and confirm `CLAUDE.md` appears under **Memory files**.
 
@@ -544,14 +553,16 @@ For instructions you want at the system prompt level, use [`--append-system-prom
 
 ### My AGENTS.md isn't loading
 
-If your repository has an `AGENTS.md` and Claude doesn't seem to know what it says, the usual cause is a `CLAUDE.md` somewhere on the project path. By default Claude reads `AGENTS.md` only when you have no `CLAUDE.md` in your working directory or above it. Check these in order:
+If your repository has an `AGENTS.md` and Claude doesn't seem to know what it says, the usual cause is a `CLAUDE.md` somewhere on the project path. By default Claude reads `AGENTS.md` only when you have no `CLAUDE.md` or `CLAUDE.local.md` in your working directory or above it. Check these in order:
 
 1. Look for a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` in your working directory or any directory above it, other than your `~/.claude/CLAUDE.md`. If you find one, Claude reads it instead of `AGENTS.md` unless you set **Project instructions** to `claude-md-and-agents-md`.
 2. Run `claude --version` and confirm v2.1.277 or later.
 3. Check whether your session is one that [can't load `AGENTS.md`](#when-agents-md-support-is-unavailable), such as a session on a third-party provider or with telemetry disabled.
 4. Type `/config` in your session to open the settings panel and confirm **Project instructions** isn't set to `claude-md` or `managed-only`. If you don't see the setting there at all, your session is one that [can't load `AGENTS.md`](#when-agents-md-support-is-unavailable).
 
-You won't see `AGENTS.md` in `/memory` or `/context` when Claude reads it directly, so check for the `AGENTS.md loaded` line or ask Claude what its project instructions say instead. If you want to keep the `CLAUDE.md` you found, or your session can't load `AGENTS.md`, [add a `CLAUDE.md` next to your `AGENTS.md` that imports it](#share-one-file-with-other-coding-tools).
+`AGENTS.md` doesn't appear in `/memory` or `/context` when Claude reads it directly, so check for the `AGENTS.md loaded` line or ask Claude what its project instructions say instead.
+
+If you want to keep the `CLAUDE.md` you found, or your session can't load `AGENTS.md`, [add a `CLAUDE.md` next to your `AGENTS.md` that imports it](#share-one-file-with-other-coding-tools).
 
 ### I don't know what auto memory saved
 
