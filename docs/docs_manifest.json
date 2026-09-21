@@ -273,8 +273,8 @@
     "changelog.md": {
       "original_url": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
       "original_raw_url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
-      "hash": "d7560afbe41610f7f6287d1175f6f225d44b14406330bfa6cdb33eaaeefeac11",
-      "last_updated": "2026-09-19T07:41:52.627580",
+      "hash": "8cfcda394235eacac008dfcaaffbe2d7ae80651f625f6412bd4b79ca77cadf51",
+      "last_updated": "2026-09-21T15:32:08.860234",
       "source": "claude-code-repository"
     },
     "channels.md": {
@@ -1185,8 +1185,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-09-20T22:50:25.311083",
-    "fetch_duration_seconds": 114.420832,
+    "last_fetch_completed": "2026-09-21T15:32:08.860293",
+    "fetch_duration_seconds": 137.264521,
     "total_pages_discovered": 197,
     "pages_fetched_successfully": 198,
     "pages_failed": 0,
@@ -1196,7 +1196,7 @@
     "total_files": 197,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-09-20T22:50:25.311144",
+  "last_updated": "2026-09-21T15:32:08.860358",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
