@@ -430,8 +430,8 @@
     "cross-session-messaging.md": {
       "original_url": "https://code.claude.com/docs/en/cross-session-messaging",
       "original_md_url": "https://code.claude.com/docs/en/cross-session-messaging.md",
-      "hash": "61beb9bc9013e9939a745a599f18d1eaa72b407afd51dc5f120a65c03abbc5f5",
-      "last_updated": "2026-09-15T23:20:21.223274"
+      "hash": "a8ccea79027e86d6406e96239afffff80fd999b1c118b13300eba7019c9e9957",
+      "last_updated": "2026-09-26T18:10:54.696313"
     },
     "data-usage.md": {
       "original_url": "https://code.claude.com/docs/en/data-usage",
@@ -1257,8 +1257,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-09-26T08:10:02.717958",
-    "fetch_duration_seconds": 140.800058,
+    "last_fetch_completed": "2026-09-26T18:12:12.704469",
+    "fetch_duration_seconds": 119.38736,
     "total_pages_discovered": 209,
     "pages_fetched_successfully": 210,
     "pages_failed": 0,
@@ -1268,7 +1268,7 @@
     "total_files": 209,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-09-26T08:10:02.717992",
+  "last_updated": "2026-09-26T18:12:12.704542",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
