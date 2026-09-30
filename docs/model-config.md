@@ -714,7 +714,7 @@ Before v2.1.223, Claude Code held only Sonnet 5, Opus 4.8, and Opus 5 sessions t
 
 The 1M context window uses standard model pricing with no premium for tokens beyond 200K. For plans where extended context is included with your subscription, usage remains covered by your subscription. For plans that access extended context through usage credits, tokens are billed to usage credits.
 
-If your account supports 1M context, the option appears in the `/model` picker in the latest versions of Claude Code. If you don't see it, try restarting your session.
+If your account supports 1M context, the option appears in the `/model` picker in the latest versions of Claude Code. If you don't see it, restart your session, and on a third-party provider check whether your deployment [pinned the model](#pin-models-for-third-party-deployments) with an `ANTHROPIC_DEFAULT_*_MODEL` variable.
 
 You can also use the `[1m]` suffix with model aliases or full model names:
 
@@ -868,6 +868,8 @@ With the `[1m]` suffix, the 1M context window applies to all usage of the pinned
 * Claude Code strips the suffix before sending the model ID to your provider.
 * Only append `[1m]` when the underlying model [supports 1M context](https://platform.claude.com/docs/en/build-with-claude/context-windows#context-window-sizes-by-model).
 * The suffix is read per variable, not per model. On Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, a model ID without `[1m]` in one variable uses 200K context even if another variable sets the same model with the suffix. Sonnet 5 always runs with the 1M window on these providers and never needs the suffix.
+
+When you set an `ANTHROPIC_DEFAULT_*_MODEL` variable, the `/model` picker shows one row for that model in place of the family's built-in rows, including any 1M context rows. To reach the 1M window without adding the suffix to that variable, your users run `/model opus[1m]`, and Claude Code applies the suffix to the model the variable names. `/model sonnet[1m]` works the same way.
 
 <Note>
   An `availableModels` allowlist delivered through [MDM or a managed settings file](/docs/en/managed-settings#delivery-mechanisms) still applies when using third-party providers; [server-managed settings are not delivered there](/docs/en/server-managed-settings#platform-availability).
