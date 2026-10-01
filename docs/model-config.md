@@ -477,7 +477,7 @@ For a hybrid approach where Claude decides mid-task when to consult a second mod
 
 ### Fallback model chains
 
-When the primary model is overloaded, unavailable, or returns another non-retryable server error, Claude Code can switch to a fallback model instead of failing the request. Authentication, billing, rate-limit, request-size, and transport errors, and a [denial by your organization's policy check](/docs/en/errors#automatic-retries), never trigger a switch; those follow their normal retry and error handling.
+When the primary model is overloaded, unavailable, or returns another non-retryable server error, Claude Code can switch to a fallback model instead of failing the request. Authentication, billing, rate-limit, request-size, and transport errors, and a [denial by your organization's policy check](/docs/en/errors#automatic-retries), never trigger a switch; those follow their normal retry and error handling. It does switch when [Amazon Bedrock](/docs/en/amazon-bedrock#when-a-model-is-disabled-mid-session) or [Google Cloud's Agent Platform](/docs/en/google-vertex-ai#when-a-model-is-disabled-mid-session) refuses a model your account can't invoke, which Claude Code treats as the model being unavailable rather than as an authentication error.
 
 Configure one or more fallback models and Claude Code tries them in order, showing a notice when it switches. The switch lasts for the current turn only, so your next message tries the primary model first again. Claude Code caps chains at three models after duplicate removal and ignores extra entries.
 
