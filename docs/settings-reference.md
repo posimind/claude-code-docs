@@ -1387,6 +1387,15 @@ When [parent settings from an embedding host](/docs/en/managed-settings#let-an-e
 
 For what a `!` pattern in a `--disallowedTools` or session rule can carve out, see [Read and Edit rules](/docs/en/permissions#read-and-edit).
 
+When you set this key, Claude Code v2.1.282 or later also ignores the [`allowed-tools`](/docs/en/skills#pre-approve-tools-for-a-skill) frontmatter in skills and `.claude/commands/` files from these sources:
+
+* A repository's `.claude/` directory
+* Your `~/.claude/skills/` and `~/.claude/commands/` directories, including [skills synced from claude.ai](/docs/en/skills#where-synced-skills-load)
+* An `--add-dir` directory
+* [Plugins declared with a `.claude-plugin` manifest](/docs/en/plugins/loading#plugins-shared-through-a-repository) inside `~/.claude/skills/` or the project's `.claude/skills/`
+
+Skills from managed settings and bundled skills keep their `allowed-tools`. A skill's `disallowed-tools` still applies. For what a developer sees when Claude Code ignores the field, see [When only managed permission rules apply](/docs/en/skills#when-only-managed-permission-rules-apply).
+
 * **Scope**: [`Managed`](#scopes)
 * **Type**: Boolean
   * `true`: managed settings become the only settings source of permission rules
@@ -1854,8 +1863,9 @@ Claude Code keeps a Bash call sandboxed when it has one of these shapes, among o
 * A command substitution, a subshell, or a control-flow block such as `if` or `for`
 * A redirection, such as `docker build . > build.log`, other than one that only duplicates a file descriptor, as `2>&1` does
 * A command name that comes from a variable
+* A `git clone`, `git init`, `git worktree add`, `git worktree move`, or `git bundle create` with a path argument that is absolute, starts with `~`, or contains a `..` segment
 
-For example, `cd build && docker compose up` stays sandboxed under a `docker *` entry, and adding a `cd` entry doesn't change that.
+For example, `cd build && docker compose up` stays sandboxed under a `docker *` entry, and adding a `cd` entry doesn't change that. Under a `git *` entry, `git clone <url> vendor/lib` runs outside the sandbox, but `git clone <url> ~/tools` stays sandboxed. A clone writes a whole tree of files, possibly executable ones, wherever its destination path points.
 
 Excluded commands still go through the regular permission flow. Exclusion is a convenience, not a security boundary: prefer [`filesystem.allowWrite`](#sandbox-filesystem-allowwrite) when a tool only needs to write somewhere specific. Claude Code merges entries across every settings scope the session loads, and there is no managed-only lock for this list, so keep a managed list narrow.
 
@@ -4017,6 +4027,13 @@ The reach depends on which file carries the key:
 * **In managed settings**: Claude Code disables every configured hook, including managed ones, and keeps running the hooks the [Agent SDK](/docs/en/agent-sdk/overview) registers in process
 * **In any other settings file**: Claude Code disables user, project, local, and plugin hooks; managed hooks, Agent SDK hooks, and hooks from plugins force-enabled in managed [`enabledPlugins`](#enabledplugins) keep running
 
+The key also stops [mods](/docs/en/plugins/mods/overview), which are plugins whose code registers hooks:
+
+* **In managed settings**: the mods in every installed plugin stop, your organization's included
+* **In any other settings file**: the mods you installed stop, and [your organization's mods](/docs/en/plugins/mods/admin#install-your-organizations-mods) keep running
+
+Mods built into Claude Code keep running in both cases. Each has [its own switch](/docs/en/plugins/mods/overview#mods-built-into-claude-code).
+
 Keeping Agent SDK hooks running when managed settings set this key requires Claude Code v2.1.242 or later.
 
 The [`/goal`](/docs/en/goal) command can't run while hooks are disabled, and the `/hooks` menu shows a notice instead of your hooks.
@@ -5523,6 +5540,8 @@ In interactive sessions, when the command comes from project or local settings, 
 
 Run your own command, such as `aws sso login`, to refresh the credentials in your `.aws` directory when the ones Claude Code has for [Amazon Bedrock](/docs/en/amazon-bedrock) stop working. Claude Code checks the current credentials against STS first and runs the command only when that check fails, then reads the refreshed `.aws` directory.
 
+When the check fails at the same time in several Claude Code processes that use the same command and credentials, such as separate terminals or IDE windows, one process runs the command and the rest wait for that run instead of starting their own. A process that has waited 60 seconds with a request pending runs the command itself. To turn this off, set [`CLAUDE_CODE_DISABLE_AUTH_REFRESH_LOCK`](/docs/en/env-vars) to `1`.
+
 * **Scope**: [`Any file`](#scopes)
 * **Type**: string, a shell command line
 * **Default**: unset, so Claude Code doesn't refresh AWS credentials for you
@@ -5633,6 +5652,8 @@ If an entry is invalid, or the value isn't a list of strings, `/login` names the
 ### `gcpAuthRefresh`
 
 Run your own command to refresh Google Cloud Application Default Credentials when Claude Code finds they've expired or can't be loaded, so [Google Cloud's Agent Platform](/docs/en/google-vertex-ai) requests keep working without you re-authenticating by hand.
+
+When several Claude Code processes that use the same command and credentials, such as separate terminals or IDE windows, find them expired at the same time, one process runs the command and the rest wait for that run instead of starting their own. A process that has waited 60 seconds with a request pending runs the command itself. To turn this off, set [`CLAUDE_CODE_DISABLE_AUTH_REFRESH_LOCK`](/docs/en/env-vars) to `1`.
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: string, a shell command line
