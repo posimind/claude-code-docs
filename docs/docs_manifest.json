@@ -346,8 +346,8 @@
     "claude-directory.md": {
       "original_url": "https://code.claude.com/docs/en/claude-directory",
       "original_md_url": "https://code.claude.com/docs/en/claude-directory.md",
-      "hash": "327bcc9e6f6ea0ca6a23dfa2f83249848a3be91eb3cbdc9eb8499963f1a62f94",
-      "last_updated": "2026-10-04T11:33:16.286097"
+      "hash": "ada65719991b700cd65351402efaa7575fd2b00205aae5915afbe41410ccd178",
+      "last_updated": "2026-10-04T20:40:28.047572"
     },
     "claude-platform-on-aws.md": {
       "original_url": "https://code.claude.com/docs/en/claude-platform-on-aws",
@@ -1317,8 +1317,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-10-04T16:14:21.657733",
-    "fetch_duration_seconds": 145.910114,
+    "last_fetch_completed": "2026-10-04T20:42:14.412421",
+    "fetch_duration_seconds": 146.217661,
     "total_pages_discovered": 219,
     "pages_fetched_successfully": 220,
     "pages_failed": 0,
@@ -1328,7 +1328,7 @@
     "total_files": 219,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-10-04T16:14:21.657760",
+  "last_updated": "2026-10-04T20:42:14.412489",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
