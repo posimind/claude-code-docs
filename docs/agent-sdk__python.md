@@ -3045,6 +3045,7 @@ Grep returns this dict shape in each output mode. Which optional keys are presen
 {
     "url": str,  # The URL to fetch content from
     "prompt": str,  # The prompt to run on the fetched content
+    "offset": int | None,  # Number of characters to skip from the start of the page. Requires Python Agent SDK 0.2.164 or later
 }
 ```
 

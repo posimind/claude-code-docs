@@ -3118,10 +3118,13 @@ Edits cells in Jupyter notebook files.
 type WebFetchInput = {
   url: string;
   prompt: string;
+  offset?: number;
 };
 ```
 
 Fetches content from a URL and processes it with an AI model.
+
+`offset` is the number of characters to skip from the start of the page. Claude sets it to keep reading a long page. The field requires Agent SDK v0.3.290 or later.
 
 ### WebSearch
 
