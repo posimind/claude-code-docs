@@ -445,7 +445,7 @@ A call waiting on an open [elicitation dialog](#respond-to-mcp-elicitation-reque
 
 ### Plugin-provided MCP servers
 
-[Plugins](/docs/en/plugins/overview) can bundle MCP servers that provide tools and integrations when you enable the plugin. Plugin MCP servers work identically to user-configured servers.
+[Plugins](/docs/en/plugins/overview) can bundle MCP servers that provide tools and integrations when you enable the plugin.
 
 **How plugin MCP servers work**:
 
@@ -1345,7 +1345,7 @@ The [root-level combinator handling](#tool-input-schemas-with-a-root-level-combi
 
 ## Require approval for a specific tool
 
-If you're building an MCP server, you can mark a tool as requiring explicit approval on every call by setting `_meta["anthropic/requiresUserInteraction"]` to `true` in the tool's `tools/list` response entry. The value must be the JSON boolean `true`; any other value is ignored.
+If you're building an MCP server, you can mark a tool as requiring explicit approval on every call by setting `_meta["anthropic/requiresUserInteraction"]` to `true` in the tool's `tools/list` response entry. The value must be the JSON Boolean `true`; any other value is ignored.
 
 Claude Code shows that tool's permission prompt on every call, even in `acceptEdits`, `auto`, and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes), and doesn't offer a "don't ask again" option for it. [Allow rules](/docs/en/permissions#permission-rule-syntax) that match the tool don't skip the prompt either. In `dontAsk` mode, which never prompts, Claude Code denies the call instead.
 
@@ -1451,6 +1451,29 @@ Claude Code truncates each tool description and each server's instructions at 2,
 
 To change the limit for every MCP server in your session, set [`CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`](/docs/en/env-vars#variables) to a number of characters. This variable requires Claude Code v2.1.280 or later.
 
+<h4 id="per-tool-alwaysload">
+  Mark a tool to load upfront or stay deferred
+</h4>
+
+To control how one of your server's tools loads, set `"anthropic/alwaysLoad"` in that tool's `_meta` object. The person who adds your server to Claude Code can also set [`alwaysLoad`](#exempt-a-server-from-deferral) for the whole server in their configuration, and their setting can override yours:
+
+| Your tool's value | What happens |
+| :- | :- |
+| `true` | The tool loads upfront. Startup doesn't wait for your server because of this value. The person configuring your server can still [defer all of its tools](#defer-a-servers-tools) |
+| `false` | The tool stays deferred when their configuration sets `"alwaysLoad": true`. This applies when your server is passed with [`--mcp-config`](/docs/en/cli-reference#cli-flags), supplied by an [Agent SDK application](/docs/en/agent-sdk/mcp#in-code), or provided by a [plugin](#plugin-provided-mcp-servers). On other servers the tool loads upfront. Requires Claude Code v2.1.285 or later |
+
+The following `tools/list` entry asks for one tool to load upfront:
+
+```json theme={null}
+{
+  "name": "search_tickets",
+  "description": "Searches the ticket tracker by keyword",
+  "_meta": {
+    "anthropic/alwaysLoad": true
+  }
+}
+```
+
 ### Configure tool search
 
 Tool search is enabled by default: MCP tools are deferred and discovered on demand. Claude Code disables it when `ANTHROPIC_BASE_URL` points to a non-first-party host, since most proxies don't forward `tool_reference` blocks. Set `ENABLE_TOOL_SEARCH` explicitly to override that fallback.
@@ -1498,7 +1521,7 @@ You can also disable the `ToolSearch` tool specifically:
 
 ### Exempt a server from deferral
 
-If a server's tools should always be visible to Claude without a search step, set `alwaysLoad` to `true` in that server's configuration. Every tool from that server then loads into context at session start regardless of the `ENABLE_TOOL_SEARCH` setting. Use this for a small number of tools that Claude needs on every turn, since each upfront tool consumes context that would otherwise be available for your conversation.
+If a server's tools should always be visible to Claude without a search step, set `alwaysLoad` to `true` in that server's configuration. The server's tools then load into context regardless of the `ENABLE_TOOL_SEARCH` setting. Use this for a small number of tools that Claude needs on every turn, since each upfront tool consumes context that would otherwise be available for your conversation.
 
 The following `.mcp.json` entry exempts one HTTP server while leaving other servers deferred:
 
@@ -1514,9 +1537,15 @@ The following `.mcp.json` entry exempts one HTTP server while leaving other serv
 }
 ```
 
-The `alwaysLoad` field is available on all server types. An MCP server can also mark individual tools as always-loaded by including `"anthropic/alwaysLoad": true` in the tool's `_meta` object, which has the same effect for that tool only.
+The `alwaysLoad` field is available on all server types.
 
 Setting `alwaysLoad: true` also makes startup wait for the server's tools, capped at the standard 5-second connect timeout, since they must be present when the first prompt is built. A remote server with a valid [`cached` entry](#server-status-detail) supplies its tools from the cache without connecting, so it doesn't hold startup. Other servers connect in the background by default; set [`MCP_CONNECTION_NONBLOCKING=0`](/docs/en/env-vars) to make startup wait for them too.
+
+<h3 id="defer-a-servers-tools">
+  Defer a server's tools
+</h3>
+
+To keep all of a server's tools behind tool search, set `"alwaysLoad": false` in that server's entry in your MCP configuration. That includes tools that the server's author has [marked to load upfront](#per-tool-alwaysload). If you leave `alwaysLoad` out, those marked tools load upfront. Requires Claude Code v2.1.287 or later.
 
 ## Use MCP prompts as commands
 
