@@ -382,14 +382,14 @@
     "cloud-environments.md": {
       "original_url": "https://code.claude.com/docs/en/cloud-environments",
       "original_md_url": "https://code.claude.com/docs/en/cloud-environments.md",
-      "hash": "8a249b9094768984a50cd4d13bdac75ddf96bc719ad43f3f2cb02a2b44cb1a7d",
-      "last_updated": "2026-10-10T20:55:08.951931"
+      "hash": "774cc0bf17c6f6f3d6a57d2b660d61c3dcb763fabb8da9063e0cb4caaf332328",
+      "last_updated": "2026-10-14T00:02:46.862607"
     },
     "code-review.md": {
       "original_url": "https://code.claude.com/docs/en/code-review",
       "original_md_url": "https://code.claude.com/docs/en/code-review.md",
-      "hash": "dee0c99cda361d89a25b7e8457aa97094e3d852abbb392db41195539939683cb",
-      "last_updated": "2026-10-10T20:55:09.647719"
+      "hash": "c8bc1fe46d475ad3b585de89661f4ba8c6ca1400923877b4cae4eda4fe8efebe",
+      "last_updated": "2026-10-14T00:02:47.504966"
     },
     "commands.md": {
       "original_url": "https://code.claude.com/docs/en/commands",
@@ -1329,8 +1329,8 @@
     }
   },
   "fetch_metadata": {
-    "last_fetch_completed": "2026-10-13T20:29:30.006100",
-    "fetch_duration_seconds": 181.504326,
+    "last_fetch_completed": "2026-10-14T00:04:31.431700",
+    "fetch_duration_seconds": 148.988967,
     "total_pages_discovered": 221,
     "pages_fetched_successfully": 222,
     "pages_failed": 0,
@@ -1340,7 +1340,7 @@
     "total_files": 221,
     "fetch_tool_version": "3.0"
   },
-  "last_updated": "2026-10-13T20:29:30.006194",
+  "last_updated": "2026-10-14T00:04:31.431758",
   "base_url": "https://raw.githubusercontent.com/posimind/claude-code-docs/main/docs/",
   "github_repository": "posimind/claude-code-docs",
   "github_ref": "main",
